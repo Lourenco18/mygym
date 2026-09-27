@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  --bg: #F6F4EF;
+  --bg-raised: #FFFFFF;
+  --text: #1A1B1E;
+  --text-dim: #6B6E76;
+  --border: #E4E0D6;
+  --accent: #FF5A36;
+  --accent-text: #FFFFFF;
+  --positive: #187A66;
+  --negative: #C1401F;
+  --warn: #C97A26;
+  --sidebar-bg: #1A1B1E;
+  --sidebar-text: #EDEEF0;
+}
+
+[data-theme='dark'] {
+  --bg: #131417;
+  --bg-raised: #1C1E23;
+  --text: #EDEEF0;
+  --text-dim: #93969E;
+  --border: #2B2D33;
+  --accent: #FF6A45;
+  --accent-text: #131417;
+  --positive: #34C6A5;
+  --negative: #FF6259;
+  --warn: #E4A24E;
+  --sidebar-bg: #0E0F12;
+  --sidebar-text: #EDEEF0;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+input, select, textarea {
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
