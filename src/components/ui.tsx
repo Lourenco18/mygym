@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export function Button({
   variant = 'primary',
@@ -138,6 +138,27 @@ export function NumberStepper({
   suffix?: string;
 }) {
   const clamp = (v: number) => (min != null ? Math.max(min, v) : v);
+  const [text, setText] = useState(value.toFixed(decimals));
+  const [focused, setFocused] = useState(false);
+
+  // Keep the field in sync with external changes (e.g. the +/- buttons,
+  // or switching between sets) as long as the person isn't mid-typing.
+  useEffect(() => {
+    if (!focused) setText(value.toFixed(decimals));
+  }, [value, decimals, focused]);
+
+  function commit(raw: string) {
+    const normalized = raw.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    if (!Number.isNaN(parsed)) {
+      const clamped = clamp(parsed);
+      onChange(clamped);
+      setText(clamped.toFixed(decimals));
+    } else {
+      setText(value.toFixed(decimals));
+    }
+  }
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -147,8 +168,18 @@ export function NumberStepper({
       >
         −
       </button>
-      <div className="flex-1 text-center font-display text-2xl font-bold tabular">
-        {value.toFixed(decimals)}{suffix ? <span className="text-sm font-body text-[var(--text-dim)] ml-1">{suffix}</span> : null}
+      <div className="flex-1 flex items-center justify-center gap-1">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={text}
+          onFocus={(e) => { setFocused(true); e.target.select(); }}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={(e) => { setFocused(false); commit(e.target.value); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+          className="w-full min-w-0 text-center font-display text-2xl font-bold tabular bg-transparent border-none p-0 focus:outline-none"
+        />
+        {suffix ? <span className="text-sm font-body text-[var(--text-dim)]">{suffix}</span> : null}
       </div>
       <button
         type="button"

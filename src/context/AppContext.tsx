@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import type {
   AppData, Exercise, WorkoutPlan, WorkoutDay, WorkoutSession, PerformedExercise,
-  ExerciseSet, BodyWeightEntry, CardioEntry, NutritionEntry, Goal, PersonalRecord,
+  ExerciseSet, BodyWeightEntry, NutritionEntry, Goal, PersonalRecord,
   MissedReason, PRType,
 } from '../types';
 import { loadData, saveData, saveDataImmediate } from '../lib/storage';
@@ -45,13 +45,10 @@ interface AppContextValue {
   removeSet: (sessionId: string, performedExerciseId: string, setId: string) => void;
   deleteSession: (id: string) => void;
 
-  // Body weight / cardio / nutrition
+  // Body weight / nutrition
   addBodyWeight: (entry: Omit<BodyWeightEntry, 'id'>) => void;
   updateBodyWeight: (id: string, patch: Partial<BodyWeightEntry>) => void;
   removeBodyWeight: (id: string) => void;
-  addCardio: (entry: Omit<CardioEntry, 'id'>) => void;
-  updateCardio: (id: string, patch: Partial<CardioEntry>) => void;
-  removeCardio: (id: string) => void;
   addNutrition: (entry: Omit<NutritionEntry, 'id'>) => void;
   setNutritionGoal: (calories: number, protein: number) => void;
 
@@ -355,7 +352,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setNumber: pe.sets.length + 1,
           weight: set?.weight ?? null,
           reps: set?.reps ?? null,
-          rir: set?.rir ?? null,
+          durationSeconds: set?.durationSeconds ?? null,
+          distanceKm: set?.distanceKm ?? null,
+          intensity: set?.intensity ?? null,
           completed: false,
           isExtra: set?.isExtra ?? pe.sets.length >= (set?.setNumber ?? Infinity) ? set?.isExtra : undefined,
         };
@@ -398,16 +397,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setData((d) => ({ ...d, bodyWeightEntries: d.bodyWeightEntries.filter((e) => e.id !== id) }));
   }, []);
 
-  const addCardio = useCallback((entry: Omit<CardioEntry, 'id'>) => {
-    setData((d) => ({ ...d, cardioEntries: [...d.cardioEntries, { ...entry, id: makeId() }] }));
-  }, []);
-  const updateCardio = useCallback((id: string, patch: Partial<CardioEntry>) => {
-    setData((d) => ({ ...d, cardioEntries: d.cardioEntries.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
-  }, []);
-  const removeCardio = useCallback((id: string) => {
-    setData((d) => ({ ...d, cardioEntries: d.cardioEntries.filter((e) => e.id !== id) }));
-  }, []);
-
   const addNutrition = useCallback((entry: Omit<NutritionEntry, 'id'>) => {
     setData((d) => {
       const withoutSameDate = d.nutritionEntries.filter((e) => e.date !== entry.date);
@@ -438,7 +427,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     startSession, getSession, updateSession, finishSession, markMissed,
     addPerformedExercise, addSet, updateSet, removeSet, deleteSession,
     addBodyWeight, updateBodyWeight, removeBodyWeight,
-    addCardio, updateCardio, removeCardio,
     addNutrition, setNutritionGoal,
     addGoal, updateGoal, removeGoal,
     // eslint-disable-next-line react-hooks/exhaustive-deps

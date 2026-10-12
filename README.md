@@ -41,7 +41,7 @@ A aplicação separa sempre **o que planeaste** de **o que realmente fizeste**:
 - Um **Plano de treino** define dias, exercícios, séries/repetições/peso
   objetivo — é a tua referência.
 - Uma **Sessão de treino** guarda o que efetivamente registaste durante o
-  treino (peso, repetições, RIR, séries extra) — nunca é sobrescrita quando
+  treino (peso, repetições, séries extra) — nunca é sobrescrita quando
   editas o plano.
 
 Isto permite comparar sempre **Objetivo vs. Realizado**.
@@ -69,11 +69,10 @@ src/
     Dashboard.tsx              ecrã principal: treino de hoje, resumo da semana, progressão, PRs
     Plans.tsx                   criador e editor de planos (dias, exercícios, drag & drop)
     Exercises.tsx                 biblioteca de exercícios + histórico e gráficos por exercício
-    Workout.tsx                    Modo Treino: séries, timer de descanso, registo em tempo real
+    Workout.tsx                    Modo Treino: séries e registo em tempo real
     History.tsx                      calendário mensal + histórico de sessões, marcar treinos perdidos
     Stats.tsx                          estatísticas gerais e gráficos (volume, frequência, peso corporal)
     BodyWeight.tsx                       peso corporal e medidas
-    Cardio.tsx                            registo de sessões de cardio
     Nutrition.tsx                           tracking simples de calorias/proteína
     Goals.tsx                                 objetivos personalizados com progresso
     Feedback.tsx                               análise/observações geradas a partir dos dados reais
@@ -88,9 +87,9 @@ src/
   e o seu histórico mantém-se associado mesmo que seja usado em vários planos
 - Modo Treino guiado, exercício a exercício, com:
   - último treino registado para esse exercício
-  - séries com peso/repetições/RIR flexíveis (não limitado ao plano)
+  - séries com peso/repetições flexíveis ou duração (ex.: prancha)
+  - exercícios de peso corporal registam apenas repetições, exceto os definidos por duração
   - possibilidade de adicionar ou remover séries durante o treino
-  - timer de descanso com +30s / −30s / saltar
 - Histórico completo por exercício com gráficos (peso, repetições, volume)
 - Deteção automática de recordes pessoais (peso máximo, mais repetições,
   volume máximo numa sessão, estimativa de 1RM)
@@ -100,7 +99,6 @@ src/
   descanso) e possibilidade de marcar motivo de treino perdido
 - Cumprimento do plano e streak de dias seguidos
 - Peso corporal e medidas (cintura, braço, peito, perna) com gráfico
-- Registo de cardio com estatísticas semanais/mensais
 - Tracking simples de nutrição (calorias e proteína) com objetivos
 - Objetivos personalizados com barra de progresso
 - Página de Análise com observações escritas exclusivamente a partir dos

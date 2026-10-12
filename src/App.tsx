@@ -9,7 +9,6 @@ import { ExerciseLibrary, ExerciseDetail } from './components/Exercises';
 import { NewWorkoutRedirect, WorkoutMode, WorkoutSummary } from './components/Workout';
 import { Stats } from './components/Stats';
 import { BodyWeightPage } from './components/BodyWeight';
-import { CardioPage } from './components/Cardio';
 import { NutritionPage } from './components/Nutrition';
 import { GoalsPage } from './components/Goals';
 import { FeedbackPage } from './components/Feedback';
@@ -29,7 +28,6 @@ export default function App() {
             <Route path="exercicios/:id" element={<ExerciseDetail />} />
             <Route path="progresso" element={<Stats />} />
             <Route path="peso" element={<BodyWeightPage />} />
-            <Route path="cardio" element={<CardioPage />} />
             <Route path="nutricao" element={<NutritionPage />} />
             <Route path="objetivos" element={<GoalsPage />} />
             <Route path="analise" element={<FeedbackPage />} />

@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Button, Card, Field, Input, Textarea, Modal, Badge, EmptyState, Select } from './ui';
 import type { PlannedExercise, RepType, WorkoutDay } from '../types';
+import { isCardioExercise } from '../lib/calculations';
 
 const DOW_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -302,9 +303,21 @@ function DayEditorPanel({
                 <div className="flex-1 min-w-0" onClick={() => onEditExercise(pe)}>
                   <p className="font-medium text-sm truncate">{ex?.name ?? 'Exercício'}</p>
                   <p className="text-xs text-[var(--text-dim)] tabular">
-                    {pe.sets}× {pe.repType === 'range' ? `${pe.repsMin ?? '?'}-${pe.repsMax ?? '?'}` : pe.repType === 'fixed' ? pe.repsMin : pe.repType === 'failure' ? 'até à falha' : 'tempo'}
-                    {pe.targetWeight ? ` · ${pe.targetWeight} kg` : ''}
-                    {pe.rirMin != null ? ` · RIR ${pe.rirMin}${pe.rirMax != null ? `-${pe.rirMax}` : ''}` : ''}
+                    {isCardioExercise(ex) ? (
+                      <>
+                        {pe.targetDurationSeconds ? `${Math.round(pe.targetDurationSeconds / 60)} min` : 'Tempo livre'}
+                        {pe.targetDistanceKm ? ` · ${pe.targetDistanceKm} km` : ''}
+                      </>
+                    ) : pe.repType === 'time' ? (
+                      <>
+                        {pe.sets}× {pe.targetDurationSeconds ? formatDuration(pe.targetDurationSeconds) : 'tempo livre'}
+                      </>
+                    ) : (
+                      <>
+                        {pe.sets}× {pe.repType === 'range' ? `${pe.repsMin ?? '?'}-${pe.repsMax ?? '?'}` : pe.repType === 'fixed' ? pe.repsMin : pe.repType === 'failure' ? 'até à falha' : 'tempo'}
+                        {pe.targetWeight ? ` · ${pe.targetWeight} kg` : ''}
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -346,14 +359,23 @@ function ExercisePickerModal({ open, onClose, planId, dayId }: { open: boolean; 
     .filter((e) => e.name.toLowerCase().includes(search.toLowerCase()));
 
   function pick(exerciseId: string) {
-    addPlannedExercise(planId, dayId, {
-      exerciseId,
-      sets: 3,
-      repType: 'range',
-      repsMin: 8,
-      repsMax: 12,
-      restSeconds: 90,
-    });
+    const ex = data.exercises.find((e) => e.id === exerciseId);
+    if (isCardioExercise(ex)) {
+      addPlannedExercise(planId, dayId, {
+        exerciseId,
+        sets: 1,
+        repType: 'time',
+        targetDurationSeconds: 20 * 60,
+      });
+    } else {
+      addPlannedExercise(planId, dayId, {
+        exerciseId,
+        sets: 3,
+        repType: 'range',
+        repsMin: 8,
+        repsMax: 12,
+      });
+    }
     onClose();
   }
 
@@ -425,10 +447,44 @@ function PlannedExerciseModal({ planId, dayId, plannedExercise, onClose }: { pla
   const { data, updatePlannedExercise, removePlannedExercise } = useApp();
   const ex = data.exercises.find((e) => e.id === plannedExercise.exerciseId);
   const [form, setForm] = useState(plannedExercise);
+  const cardio = isCardioExercise(ex);
 
   function save() {
     updatePlannedExercise(planId, dayId, plannedExercise.id, form);
     onClose();
+  }
+
+  if (cardio) {
+    const durationMin = form.targetDurationSeconds ? Math.round(form.targetDurationSeconds / 60) : undefined;
+    return (
+      <Modal open onClose={onClose} title={ex?.name ?? 'Exercício'}>
+        <div className="space-y-4">
+          <Field label="Duração alvo (minutos)">
+            <Input
+              type="number"
+              min={0}
+              value={durationMin ?? ''}
+              onChange={(e) => setForm({ ...form, targetDurationSeconds: e.target.value ? Number(e.target.value) * 60 : undefined })}
+            />
+          </Field>
+          <Field label="Distância alvo (km, opcional)">
+            <Input
+              type="number"
+              step={0.1}
+              value={form.targetDistanceKm ?? ''}
+              onChange={(e) => setForm({ ...form, targetDistanceKm: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </Field>
+          <Field label="Notas">
+            <Textarea value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ritmo moderado." />
+          </Field>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={save}>Guardar</Button>
+            <Button variant="danger" onClick={() => { removePlannedExercise(planId, dayId, plannedExercise.id); onClose(); }}>Remover</Button>
+          </div>
+        </div>
+      </Modal>
+    );
   }
 
   return (
@@ -437,12 +493,12 @@ function PlannedExerciseModal({ planId, dayId, plannedExercise, onClose }: { pla
         <Field label="Séries">
           <Input type="number" min={1} value={form.sets} onChange={(e) => setForm({ ...form, sets: Number(e.target.value) })} />
         </Field>
-        <Field label="Tipo de repetições">
+        <Field label="Tipo de medida">
           <Select value={form.repType} onChange={(e) => setForm({ ...form, repType: e.target.value as RepType })}>
             <option value="range">Intervalo (ex: 8-12)</option>
             <option value="fixed">Fixo</option>
             <option value="failure">Até à falha</option>
-            <option value="time">Tempo</option>
+            <option value="time">Duração (tempo)</option>
           </Select>
         </Field>
         {form.repType === 'range' && (
@@ -454,16 +510,20 @@ function PlannedExerciseModal({ planId, dayId, plannedExercise, onClose }: { pla
         {form.repType === 'fixed' && (
           <Field label="Repetições"><Input type="number" value={form.repsMin ?? ''} onChange={(e) => setForm({ ...form, repsMin: Number(e.target.value), repsMax: Number(e.target.value) })} /></Field>
         )}
-        <Field label="Peso objetivo (kg)">
-          <Input type="number" step={0.5} value={form.targetWeight ?? ''} onChange={(e) => setForm({ ...form, targetWeight: e.target.value ? Number(e.target.value) : undefined })} />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="RIR mín."><Input type="number" value={form.rirMin ?? ''} onChange={(e) => setForm({ ...form, rirMin: e.target.value ? Number(e.target.value) : undefined })} /></Field>
-          <Field label="RIR máx."><Input type="number" value={form.rirMax ?? ''} onChange={(e) => setForm({ ...form, rirMax: e.target.value ? Number(e.target.value) : undefined })} /></Field>
-        </div>
-        <Field label="Descanso (segundos)">
-          <Input type="number" step={15} value={form.restSeconds} onChange={(e) => setForm({ ...form, restSeconds: Number(e.target.value) })} />
-        </Field>
+        {form.repType === 'time' ? (
+          <Field label="Duração alvo (segundos, opcional)">
+            <Input
+              type="number"
+              min={0}
+              value={form.targetDurationSeconds ?? ''}
+              onChange={(e) => setForm({ ...form, targetDurationSeconds: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </Field>
+        ) : (
+          <Field label="Peso objetivo (kg)">
+            <Input type="number" step={0.5} value={form.targetWeight ?? ''} onChange={(e) => setForm({ ...form, targetWeight: e.target.value ? Number(e.target.value) : undefined })} />
+          </Field>
+        )}
         <Field label="Notas">
           <Textarea value={form.notes ?? ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Controlar a descida." />
         </Field>
@@ -474,4 +534,11 @@ function PlannedExerciseModal({ planId, dayId, plannedExercise, onClose }: { pla
       </div>
     </Modal>
   );
+}
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes === 0) return `${seconds} s`;
+  return remainingSeconds === 0 ? `${minutes} min` : `${minutes} min ${remainingSeconds} s`;
 }

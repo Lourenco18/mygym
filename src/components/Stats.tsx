@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useApp } from '../context/AppContext';
 import { Card, BigStat, Badge } from './ui';
-import { sessionVolume, sessionSetCount, estimate1RM } from '../lib/calculations';
+import { sessionVolume, sessionSetCount, estimate1RM, sessionCardioMinutes } from '../lib/calculations';
 
 export function Stats() {
   const { data } = useApp();
@@ -15,7 +15,7 @@ export function Stats() {
     (s, sess) => s + sess.performedExercises.reduce((a, pe) => a + pe.sets.filter((x) => x.completed).reduce((r, x) => r + (x.reps ?? 0), 0), 0),
     0,
   );
-  const totalCardioMin = data.cardioEntries.reduce((s, c) => s + c.durationMinutes, 0);
+  const totalCardioMin = Math.round(completed.reduce((s, sess) => s + sessionCardioMinutes(data, sess), 0));
   const totalDurationMin = Math.round(completed.reduce((s, sess) => s + (sess.durationSeconds ?? 0), 0) / 60);
 
   const weightData = [...data.bodyWeightEntries]

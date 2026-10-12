@@ -10,7 +10,6 @@ function defaultData(): AppData {
     plans: [],
     sessions: [],
     bodyWeightEntries: [],
-    cardioEntries: [],
     nutritionEntries: [],
     nutritionGoal: { calories: 2800, protein: 160 },
     goals: [],
@@ -78,7 +77,7 @@ export function importJSON(json: string): AppData {
 
 export function exportSessionsCSV(data: AppData): string {
   const rows: string[] = [];
-  rows.push(['Data', 'Treino', 'Exercicio', 'Serie', 'Peso', 'Reps', 'RIR', 'RPE', 'Concluida'].join(';'));
+  rows.push(['Data', 'Treino', 'Exercicio', 'Serie', 'Peso', 'Reps', 'RPE', 'Duracao(min)', 'Distancia(km)', 'Concluida'].join(';'));
   for (const session of data.sessions) {
     for (const pe of session.performedExercises) {
       const ex = data.exercises.find((e) => e.id === pe.exerciseId);
@@ -91,8 +90,9 @@ export function exportSessionsCSV(data: AppData): string {
             String(set.setNumber),
             set.weight ?? '',
             set.reps ?? '',
-            set.rir ?? '',
             set.rpe ?? '',
+            set.durationSeconds != null ? (set.durationSeconds / 60).toFixed(1) : '',
+            set.distanceKm ?? '',
             set.completed ? 'sim' : 'nao',
           ].join(';'),
         );

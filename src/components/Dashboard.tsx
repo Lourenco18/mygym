@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Card, BigStat, Badge, Button, EmptyState } from './ui';
 import {
-  weekSessions, sessionVolume, currentStreak, isoDate, suggestProgression,
+  weekSessions, sessionVolume, currentStreak, isoDate, suggestProgression, sessionCardioMinutes,
 } from '../lib/calculations';
 
 function activePlanOf(plans: ReturnType<typeof useApp>['data']['plans']) {
@@ -44,22 +44,9 @@ export function Dashboard() {
     .filter((s) => s.status === 'completed' && new Date(s.date) >= monthStart)
     .reduce((sum, s) => sum + sessionVolume(s), 0);
 
-  const weekCardioMin = data.cardioEntries
-    .filter((c) => thisWeek.some((s) => s.date === c.date) || isSameWeek(c.date))
-    .reduce((sum, c) => sum + c.durationMinutes, 0);
-
-  function isSameWeek(dateStr: string) {
-    const d = new Date(dateStr + 'T00:00:00');
-    const start = new Date(today);
-    const day = start.getDay();
-    const diff = (day + 6) % 7;
-    start.setDate(start.getDate() - diff);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return d >= start && d <= end;
-  }
+  const weekCardioMin = Math.round(
+    completedThisWeek.reduce((sum, s) => sum + sessionCardioMinutes(data, s), 0),
+  );
 
   const streak = currentStreak(data);
 

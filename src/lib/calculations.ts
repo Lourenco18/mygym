@@ -1,9 +1,29 @@
 import type {
   AppData,
+  Exercise,
   ExerciseSet,
   PerformedExercise,
   WorkoutSession,
 } from '../types';
+
+export function isCardioExercise(ex: Exercise | undefined | null): boolean {
+  return ex?.muscleGroup === 'Cardio';
+}
+
+export function setDurationMinutes(set: ExerciseSet): number {
+  if (!set.completed || set.durationSeconds == null) return 0;
+  return set.durationSeconds / 60;
+}
+
+export function sessionCardioMinutes(data: AppData, session: WorkoutSession): number {
+  let total = 0;
+  for (const pe of session.performedExercises) {
+    const ex = data.exercises.find((e) => e.id === pe.exerciseId);
+    if (!isCardioExercise(ex)) continue;
+    for (const set of pe.sets) total += setDurationMinutes(set);
+  }
+  return total;
+}
 
 export function setVolume(set: ExerciseSet): number {
   if (!set.completed || set.weight == null || set.reps == null) return 0;

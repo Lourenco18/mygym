@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Card, EmptyState } from './ui';
 import {
-  weekSessions, lastNDaysSessions, sessionVolume, currentStreak, suggestProgression,
+  weekSessions, lastNDaysSessions, sessionVolume, currentStreak, suggestProgression, sessionCardioMinutes,
 } from '../lib/calculations';
 
 export function FeedbackPage() {
@@ -111,9 +111,9 @@ function buildInsights(data: ReturnType<typeof useApp>['data']): string[] {
   }
 
   // Cardio this week.
-  const cardioThisWeek = data.cardioEntries.filter((c) => thisWeek.some((s) => s.date === c.date) || isSameWeekAsToday(c.date));
-  if (cardioThisWeek.length > 0) {
-    insights.push(`Fizeste ${cardioThisWeek.length} sessão(ões) de cardio esta semana.`);
+  const cardioSessionsThisWeek = thisWeek.filter((s) => s.status === 'completed' && sessionCardioMinutes(data, s) > 0);
+  if (cardioSessionsThisWeek.length > 0) {
+    insights.push(`Fizeste ${cardioSessionsThisWeek.length} sessão(ões) de cardio esta semana.`);
   }
 
   // Streak.
@@ -132,17 +132,4 @@ function buildInsights(data: ReturnType<typeof useApp>['data']): string[] {
   }
 
   return insights;
-}
-
-function isSameWeekAsToday(dateStr: string): boolean {
-  const d = new Date(dateStr + 'T00:00:00');
-  const now = new Date();
-  const start = new Date(now);
-  const dow = (now.getDay() + 6) % 7;
-  start.setDate(now.getDate() - dow);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return d >= start && d <= end;
 }

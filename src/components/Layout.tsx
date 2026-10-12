@@ -9,7 +9,6 @@ const NAV = [
   { to: '/exercicios', label: 'Exercícios', icon: '🏋️' },
   { to: '/progresso', label: 'Progresso', icon: '📈' },
   { to: '/peso', label: 'Peso', icon: '⚖️' },
-  { to: '/cardio', label: 'Cardio', icon: '🏃' },
   { to: '/nutricao', label: 'Nutrição', icon: '🍽️' },
   { to: '/objetivos', label: 'Objetivos', icon: '🎯' },
   { to: '/analise', label: 'Análise', icon: '💡' },

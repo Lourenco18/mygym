@@ -195,18 +195,42 @@ function EditExerciseModal({ ex, onClose }: { ex: import('../types').Exercise; o
   const [name, setName] = useState(ex.name);
   const [muscleGroup, setMuscleGroup] = useState(ex.muscleGroup);
   const [equipment, setEquipment] = useState(ex.equipment);
+  const [isBodyweight, setIsBodyweight] = useState(!!ex.isBodyweight);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-[var(--bg)] w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-[var(--border)] p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-display text-xl font-semibold">Editar exercício</h2>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
-        <Select value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value as any)}>
+        <label className="block space-y-1">
+          <span className="text-xs text-[var(--text-dim)]">Nome</span>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs text-[var(--text-dim)]">Grupo muscular</span>
+          <Select value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value as typeof muscleGroup)}>
           {MUSCLE_GROUP_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
-        </Select>
-        <Input value={equipment} onChange={(e) => setEquipment(e.target.value)} />
+          </Select>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isBodyweight}
+            onChange={(e) => {
+              const bodyweight = e.target.checked;
+              setIsBodyweight(bodyweight);
+              setEquipment(bodyweight ? 'Peso corporal' : equipment === 'Peso corporal' ? '' : equipment);
+            }}
+          />
+          Exercício de peso corporal
+        </label>
+        {!isBodyweight && (
+          <label className="block space-y-1">
+            <span className="text-xs text-[var(--text-dim)]">Equipamento</span>
+            <Input value={equipment} onChange={(e) => setEquipment(e.target.value)} placeholder="Barra, halteres, máquina..." />
+          </label>
+        )}
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => { updateExercise(ex.id, { name, muscleGroup, equipment }); onClose(); }}>Guardar</Button>
+          <Button className="flex-1" onClick={() => { updateExercise(ex.id, { name, muscleGroup, equipment, isBodyweight }); onClose(); }}>Guardar</Button>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
         </div>
       </div>

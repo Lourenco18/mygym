@@ -44,10 +44,10 @@ export interface PlannedExercise {
   repsMin?: number;
   repsMax?: number;
   targetWeight?: number;
-  rirMin?: number;
-  rirMax?: number;
-  restSeconds: number;
   notes?: string;
+  // Cardio (repType 'time' / exercícios do grupo "Cardio")
+  targetDurationSeconds?: number;
+  targetDistanceKm?: number;
 }
 
 export interface WorkoutDay {
@@ -69,17 +69,23 @@ export interface WorkoutPlan {
   updatedAt: string;
 }
 
+export type CardioIntensity = 'Leve' | 'Moderado' | 'Intenso';
+
 export interface ExerciseSet {
   id: string;
   setNumber: number;
   weight: number | null;
   bodyweight?: number | null; // for bodyweight-assisted exercises
   reps: number | null;
-  rir?: number | null;
   rpe?: number | null;
   completed: boolean;
   isExtra?: boolean; // added beyond the plan
   notes?: string;
+  // Cardio: preenchido em vez de weight/reps quando o exercício é de Cardio.
+  durationSeconds?: number | null;
+  distanceKm?: number | null;
+  intensity?: CardioIntensity | null;
+  calories?: number | null;
 }
 
 export interface PerformedExercise {
@@ -116,17 +122,6 @@ export interface BodyWeightEntry {
   arm?: number;
   chest?: number;
   leg?: number;
-}
-
-export interface CardioEntry {
-  id: string;
-  date: string;
-  type: string;
-  durationMinutes: number;
-  distanceKm?: number;
-  intensity: 'Leve' | 'Moderado' | 'Intenso';
-  calories?: number;
-  notes?: string;
 }
 
 export interface NutritionEntry {
@@ -181,7 +176,6 @@ export interface AppData {
   plans: WorkoutPlan[];
   sessions: WorkoutSession[];
   bodyWeightEntries: BodyWeightEntry[];
-  cardioEntries: CardioEntry[];
   nutritionEntries: NutritionEntry[];
   nutritionGoal: NutritionGoal;
   goals: Goal[];
