@@ -12,15 +12,15 @@ export function Button({
 }) {
   const base = 'inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]';
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-md',
-    md: 'px-4 py-2.5 text-sm rounded-lg',
-    lg: 'px-6 py-4 text-base rounded-lg',
+    sm: 'px-3 py-1.5 text-sm rounded-xl',
+    md: 'px-4 py-2.5 text-sm rounded-xl',
+    lg: 'px-6 py-3.5 text-base rounded-xl',
   };
   const variants = {
-    primary: 'bg-[var(--accent)] text-[var(--accent-text)] hover:brightness-105',
-    secondary: 'bg-[var(--bg-raised)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--accent)]',
-    ghost: 'bg-transparent text-[var(--text)] hover:bg-[var(--bg-raised)]',
-    danger: 'bg-transparent text-[var(--negative)] border border-[var(--negative)]/40 hover:bg-[var(--negative)]/10',
+    primary: 'button-primary',
+    secondary: 'button-secondary',
+    ghost: 'button-ghost',
+    danger: 'button-danger',
   };
   return (
     <button className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...rest}>
@@ -32,7 +32,7 @@ export function Button({
 export function Card({ className = '', children, accent }: { className?: string; children: React.ReactNode; accent?: boolean }) {
   return (
     <div
-      className={`bg-[var(--bg-raised)] border border-[var(--border)] rounded-xl ${accent ? 'border-l-4 border-l-[var(--accent)]' : ''} ${className}`}
+      className={`surface-card ${accent ? 'is-accent' : ''} ${className}`}
     >
       {children}
     </div>
@@ -80,7 +80,7 @@ export function Badge({ children, tone = 'neutral' }: { children: React.ReactNod
     warn: 'bg-[var(--warn)]/15 text-[var(--warn)]',
     accent: 'bg-[var(--accent)]/15 text-[var(--accent)]',
   };
-  return <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${tones[tone]}`}>{children}</span>;
 }
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
@@ -103,7 +103,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
 
 export function EmptyState({ title, message, action }: { title: string; message: string; action?: React.ReactNode }) {
   return (
-    <div className="text-center py-14 px-6">
+    <div className="text-center py-8 px-6">
       <p className="font-display text-2xl font-semibold text-[var(--text)]">{title}</p>
       <p className="text-sm text-[var(--text-dim)] mt-2 max-w-sm mx-auto">{message}</p>
       {action && <div className="mt-5">{action}</div>}

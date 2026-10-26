@@ -74,22 +74,22 @@ export function Dashboard() {
     .slice(0, 3);
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5">
+    <div className="p-5 md:p-10 max-w-6xl mx-auto space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-[var(--text-dim)]">
+          <p className="text-sm font-medium text-[var(--text-dim)]">
             {today.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-1">O teu resumo</h1>
         </div>
         {streak > 0 && (
-          <Badge tone="accent">🔥 {streak} {streak === 1 ? 'dia' : 'dias'} seguidos</Badge>
+          <Badge tone="accent">Sequência · {streak} {streak === 1 ? 'dia' : 'dias'}</Badge>
         )}
       </header>
 
       {/* Today */}
-      <Card accent className="p-5">
-        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-1">Hoje</p>
+      <Card accent className="p-6 md:p-7">
+        <p className="text-sm font-semibold text-[var(--accent)] mb-3">Treino de hoje</p>
         {!plan ? (
           <EmptyState
             title="Sem plano ativo"
@@ -98,7 +98,7 @@ export function Dashboard() {
           />
         ) : todayDay?.isRestDay || !todayDay ? (
           <div>
-            <p className="font-display text-2xl font-semibold">Dia de descanso</p>
+            <p className="font-display text-2xl md:text-3xl font-semibold">Dia de descanso</p>
             {nextDay && (
               <p className="text-sm text-[var(--text-dim)] mt-1">
                 Próximo treino: <span className="text-[var(--text)] font-medium">{nextDay.day.name}</span> ({nextDay.offset === 1 ? 'amanhã' : `em ${nextDay.offset} dias`})
@@ -107,12 +107,12 @@ export function Dashboard() {
           </div>
         ) : todaySessionDone ? (
           <div>
-            <p className="font-display text-2xl font-semibold">{todayDay.name}</p>
+            <p className="font-display text-2xl md:text-3xl font-semibold mb-2">{todayDay.name}</p>
             <Badge tone="positive">✓ Treino concluído hoje</Badge>
           </div>
         ) : (
           <div>
-            <p className="font-display text-2xl font-semibold">{todayDay.name}</p>
+            <p className="font-display text-2xl md:text-3xl font-semibold">{todayDay.name}</p>
             <p className="text-sm text-[var(--text-dim)] mt-1">
               {todayDay.exercises.length} exercícios · {todayDay.exercises.reduce((s, e) => s + e.sets, 0)} séries planeadas
             </p>
@@ -128,14 +128,14 @@ export function Dashboard() {
       </Card>
 
       {/* This week */}
-      <Card className="p-5">
-        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Esta semana</p>
+      <Card className="p-5 md:p-6">
+        <p className="text-sm font-semibold mb-4">Esta semana</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <BigStat label="Treinos" value={`${completedThisWeek.length} / ${plannedTrainingDays || '–'}`} />
           <BigStat
             label="Cumprimento"
-            value={`${complianceRate}%`}
-            tone={complianceRate >= 80 ? 'positive' : complianceRate >= 50 ? 'neutral' : 'negative'}
+            value={plannedTrainingDays > 0 ? `${complianceRate}%` : '–'}
+            tone={plannedTrainingDays === 0 ? 'neutral' : complianceRate >= 80 ? 'positive' : complianceRate >= 50 ? 'neutral' : 'negative'}
           />
           <BigStat label="Volume" value={`${Math.round(weekVolume).toLocaleString('pt-PT')} kg`} />
           <BigStat label="Cardio" value={`${weekCardioMin} min`} />
@@ -144,8 +144,8 @@ export function Dashboard() {
 
       {/* Progress */}
       <div className="grid sm:grid-cols-2 gap-5">
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Peso corporal</p>
+        <Card className="p-5 md:p-6">
+          <p className="text-sm font-semibold mb-3">Peso corporal</p>
           {currentWeight ? (
             <BigStat
               label=""
@@ -157,16 +157,16 @@ export function Dashboard() {
             <p className="text-sm text-[var(--text-dim)]">Sem registos ainda.</p>
           )}
         </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Volume mensal</p>
+        <Card className="p-5 md:p-6">
+          <p className="text-sm font-semibold mb-3">Volume este mês</p>
           <BigStat label="" value={`${Math.round(monthVolume).toLocaleString('pt-PT')} kg`} />
         </Card>
       </div>
 
       {/* Progression insight */}
       {(progressing.length > 0 || stagnant.length > 0) && (
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Progressão</p>
+        <Card className="p-5 md:p-6">
+          <p className="text-sm font-semibold mb-3">Sugestões para progredir</p>
           <div className="space-y-2">
             {progressing.slice(0, 3).map((s) => (
               <ExerciseSuggestionRow key={s.exerciseId} exerciseId={s.exerciseId} message={s.message} suggestedWeight={s.suggestedWeight} tone="positive" />
@@ -180,14 +180,14 @@ export function Dashboard() {
 
       {/* Recent PRs */}
       {recentPRs.length > 0 && (
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Recordes recentes</p>
+        <Card className="p-5 md:p-6">
+          <p className="text-sm font-semibold mb-3">Recordes pessoais recentes</p>
           <div className="space-y-2">
             {recentPRs.map((pr) => {
               const ex = data.exercises.find((e) => e.id === pr.exerciseId);
               return (
-                <div key={pr.id} className="flex items-center justify-between text-sm">
-                  <span>🏆 {ex?.name ?? 'Exercício'}</span>
+                <div key={pr.id} className="flex items-center justify-between gap-4 text-sm border-b last:border-0 border-[var(--border)] py-2 first:pt-0 last:pb-0">
+                  <span>{ex?.name ?? 'Exercício'}</span>
                   <span className="tabular font-semibold">
                     {pr.type === 'max_weight' && `${pr.value} kg`}
                     {pr.type === 'max_reps' && `${pr.value} reps`}
