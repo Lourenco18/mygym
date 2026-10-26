@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { translatePlanDayName, translateSeedExerciseName, useTranslation } from '../lib/i18n';
 import { Card, BigStat, Badge, Button, EmptyState } from './ui';
 import {
   weekSessions, sessionVolume, currentStreak, isoDate, suggestProgression, sessionCardioMinutes,
@@ -12,6 +13,7 @@ function activePlanOf(plans: ReturnType<typeof useApp>['data']['plans']) {
 
 export function Dashboard() {
   const { data } = useApp();
+  const { t, dateLocale } = useTranslation();
   const navigate = useNavigate();
   const plan = activePlanOf(data.plans);
 
@@ -78,50 +80,50 @@ export function Dashboard() {
       <header className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-[var(--text-dim)]">
-            {today.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {today.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-1">O teu resumo</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-1">{t('O teu resumo')}</h1>
         </div>
         {streak > 0 && (
-          <Badge tone="accent">Sequência · {streak} {streak === 1 ? 'dia' : 'dias'}</Badge>
+          <Badge tone="accent">{t(streak === 1 ? 'Sequência · {{count}} dia' : 'Sequência · {{count}} dias', { count: streak })}</Badge>
         )}
       </header>
 
       {/* Today */}
       <Card accent className="p-6 md:p-7">
-        <p className="text-sm font-semibold text-[var(--accent)] mb-3">Treino de hoje</p>
+        <p className="text-sm font-semibold text-[var(--accent)] mb-3">{t('Treino de hoje')}</p>
         {!plan ? (
           <EmptyState
-            title="Sem plano ativo"
-            message="Cria um plano de treino para veres aqui o treino de hoje."
-            action={<Button onClick={() => navigate('/planos')}>Criar plano</Button>}
+            title={t('Sem plano ativo')}
+            message={t('Cria um plano de treino para veres aqui o treino de hoje.')}
+            action={<Button onClick={() => navigate('/planos')}>{t('Criar plano')}</Button>}
           />
         ) : todayDay?.isRestDay || !todayDay ? (
           <div>
-            <p className="font-display text-2xl md:text-3xl font-semibold">Dia de descanso</p>
+            <p className="font-display text-2xl md:text-3xl font-semibold">{t('Dia de descanso')}</p>
             {nextDay && (
               <p className="text-sm text-[var(--text-dim)] mt-1">
-                Próximo treino: <span className="text-[var(--text)] font-medium">{nextDay.day.name}</span> ({nextDay.offset === 1 ? 'amanhã' : `em ${nextDay.offset} dias`})
+                {t('Próximo treino: ')}<span className="text-[var(--text)] font-medium">{translatePlanDayName(nextDay.day.name, t)}</span> ({nextDay.offset === 1 ? t('amanhã') : t('em {{count}} dias', { count: nextDay.offset })})
               </p>
             )}
           </div>
         ) : todaySessionDone ? (
           <div>
-            <p className="font-display text-2xl md:text-3xl font-semibold mb-2">{todayDay.name}</p>
-            <Badge tone="positive">✓ Treino concluído hoje</Badge>
+            <p className="font-display text-2xl md:text-3xl font-semibold mb-2">{translatePlanDayName(todayDay.name, t)}</p>
+            <Badge tone="positive">✓ {t('Treino concluído hoje')}</Badge>
           </div>
         ) : (
           <div>
-            <p className="font-display text-2xl md:text-3xl font-semibold">{todayDay.name}</p>
+            <p className="font-display text-2xl md:text-3xl font-semibold">{translatePlanDayName(todayDay.name, t)}</p>
             <p className="text-sm text-[var(--text-dim)] mt-1">
-              {todayDay.exercises.length} exercícios · {todayDay.exercises.reduce((s, e) => s + e.sets, 0)} séries planeadas
+              {todayDay.exercises.length} {t('exercícios')} · {todayDay.exercises.reduce((s, e) => s + e.sets, 0)} {t('séries planeadas')}
             </p>
             <Button
               size="lg"
               className="mt-4 w-full sm:w-auto"
               onClick={() => navigate(`/treino/novo?planId=${plan.id}&dayId=${todayDay.id}`)}
             >
-              Começar treino
+              {t('Começar treino')}
             </Button>
           </div>
         )}
@@ -129,50 +131,50 @@ export function Dashboard() {
 
       {/* This week */}
       <Card className="p-5 md:p-6">
-        <p className="text-sm font-semibold mb-4">Esta semana</p>
+        <p className="text-sm font-semibold mb-4">{t('Esta semana')}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <BigStat label="Treinos" value={`${completedThisWeek.length} / ${plannedTrainingDays || '–'}`} />
+          <BigStat label={t('Treinos')} value={`${completedThisWeek.length} / ${plannedTrainingDays || '–'}`} />
           <BigStat
-            label="Cumprimento"
+            label={t('Cumprimento')}
             value={plannedTrainingDays > 0 ? `${complianceRate}%` : '–'}
             tone={plannedTrainingDays === 0 ? 'neutral' : complianceRate >= 80 ? 'positive' : complianceRate >= 50 ? 'neutral' : 'negative'}
           />
-          <BigStat label="Volume" value={`${Math.round(weekVolume).toLocaleString('pt-PT')} kg`} />
-          <BigStat label="Cardio" value={`${weekCardioMin} min`} />
+          <BigStat label={t('Volume')} value={`${Math.round(weekVolume).toLocaleString(dateLocale)} kg`} />
+          <BigStat label={t('Cardio')} value={`${weekCardioMin} ${t('min')}`} />
         </div>
       </Card>
 
       {/* Progress */}
       <div className="grid sm:grid-cols-2 gap-5">
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold mb-3">Peso corporal</p>
+          <p className="text-sm font-semibold mb-3">{t('Peso corporal')}</p>
           {currentWeight ? (
             <BigStat
               label=""
               value={`${currentWeight.weight} kg`}
-              sub={weightDelta != null ? `${weightDelta >= 0 ? '+' : ''}${weightDelta.toFixed(1)} kg este mês` : undefined}
+              sub={weightDelta != null ? `${weightDelta >= 0 ? '+' : ''}${weightDelta.toFixed(1)} kg ${t('este mês')}` : undefined}
               tone={weightDelta == null ? 'neutral' : weightDelta > 0 ? 'positive' : weightDelta < 0 ? 'negative' : 'neutral'}
             />
           ) : (
-            <p className="text-sm text-[var(--text-dim)]">Sem registos ainda.</p>
+            <p className="text-sm text-[var(--text-dim)]">{t('Sem registos ainda.')}</p>
           )}
         </Card>
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold mb-3">Volume este mês</p>
-          <BigStat label="" value={`${Math.round(monthVolume).toLocaleString('pt-PT')} kg`} />
+          <p className="text-sm font-semibold mb-3">{t('Volume este mês')}</p>
+          <BigStat label="" value={`${Math.round(monthVolume).toLocaleString(dateLocale)} kg`} />
         </Card>
       </div>
 
       {/* Progression insight */}
       {(progressing.length > 0 || stagnant.length > 0) && (
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold mb-3">Sugestões para progredir</p>
+          <p className="text-sm font-semibold mb-3">{t('Sugestões para progredir')}</p>
           <div className="space-y-2">
             {progressing.slice(0, 3).map((s) => (
-              <ExerciseSuggestionRow key={s.exerciseId} exerciseId={s.exerciseId} message={s.message} suggestedWeight={s.suggestedWeight} tone="positive" />
+              <ExerciseSuggestionRow key={s.exerciseId} exerciseId={s.exerciseId} message={s.message} stagnantSessions={s.stagnantSessions} suggestedWeight={s.suggestedWeight} tone="positive" />
             ))}
             {stagnant.slice(0, 3).map((s) => (
-              <ExerciseSuggestionRow key={s.exerciseId} exerciseId={s.exerciseId} message={s.message} tone="warn" />
+              <ExerciseSuggestionRow key={s.exerciseId} exerciseId={s.exerciseId} message={s.message} stagnantSessions={s.stagnantSessions} tone="warn" />
             ))}
           </div>
         </Card>
@@ -181,17 +183,17 @@ export function Dashboard() {
       {/* Recent PRs */}
       {recentPRs.length > 0 && (
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold mb-3">Recordes pessoais recentes</p>
+          <p className="text-sm font-semibold mb-3">{t('Recordes pessoais recentes')}</p>
           <div className="space-y-2">
             {recentPRs.map((pr) => {
               const ex = data.exercises.find((e) => e.id === pr.exerciseId);
               return (
                 <div key={pr.id} className="flex items-center justify-between gap-4 text-sm border-b last:border-0 border-[var(--border)] py-2 first:pt-0 last:pb-0">
-                  <span>{ex?.name ?? 'Exercício'}</span>
+                  <span>{ex ? translateSeedExerciseName(ex.name, t) : t('Exercício')}</span>
                   <span className="tabular font-semibold">
                     {pr.type === 'max_weight' && `${pr.value} kg`}
-                    {pr.type === 'max_reps' && `${pr.value} reps`}
-                    {pr.type === 'max_volume' && `${Math.round(pr.value)} kg vol.`}
+                    {pr.type === 'max_reps' && `${pr.value} ${t('reps')}`}
+                    {pr.type === 'max_volume' && `${Math.round(pr.value)} kg ${t('vol.')}`}
                     {pr.type === 'estimated_1rm' && `~${pr.value} kg 1RM`}
                   </span>
                 </div>
@@ -204,14 +206,15 @@ export function Dashboard() {
   );
 }
 
-function ExerciseSuggestionRow({ exerciseId, message, suggestedWeight, tone }: { exerciseId: string; message: string; suggestedWeight?: number; tone: 'positive' | 'warn' }) {
+function ExerciseSuggestionRow({ exerciseId, message, stagnantSessions, suggestedWeight, tone }: { exerciseId: string; message: string; stagnantSessions?: number; suggestedWeight?: number; tone: 'positive' | 'warn' }) {
   const { data } = useApp();
+  const { t } = useTranslation();
   const ex = data.exercises.find((e) => e.id === exerciseId);
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
       <div>
-        <span className="font-medium">{ex?.name ?? 'Exercício'}</span>
-        <span className="text-[var(--text-dim)]"> — {message}</span>
+        <span className="font-medium">{ex ? translateSeedExerciseName(ex.name, t) : t('Exercício')}</span>
+        <span className="text-[var(--text-dim)]"> — {t(message, stagnantSessions == null ? undefined : { count: stagnantSessions })}</span>
       </div>
       {suggestedWeight != null && <Badge tone={tone}>{suggestedWeight} kg</Badge>}
     </div>

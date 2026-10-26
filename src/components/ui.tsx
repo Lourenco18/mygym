@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../lib/i18n';
 
 export function Button({
   variant = 'primary',
@@ -10,11 +11,11 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
 }) {
-  const base = 'inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]';
+  const base = 'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]';
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-xl',
-    md: 'px-4 py-2.5 text-sm rounded-xl',
-    lg: 'px-6 py-3.5 text-base rounded-xl',
+    sm: 'px-2.5 py-1.5 text-xs rounded-xl',
+    md: 'px-3 py-2 text-sm rounded-xl',
+    lg: 'px-5 py-3 text-base rounded-xl',
   };
   const variants = {
     primary: 'button-primary',
@@ -84,6 +85,7 @@ export function Badge({ children, tone = 'neutral' }: { children: React.ReactNod
 }
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
+  const { t } = useTranslation();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
@@ -93,7 +95,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] sticky top-0 bg-[var(--bg)]">
           <h2 className="font-display text-xl font-semibold tracking-tight">{title}</h2>
-          <button onClick={onClose} aria-label="Fechar" className="text-[var(--text-dim)] hover:text-[var(--text)] text-xl leading-none px-2">✕</button>
+          <button onClick={onClose} aria-label={t('Fechar')} className="text-[var(--text-dim)] hover:text-[var(--text)] text-xl leading-none px-2">✕</button>
         </div>
         <div className="p-5">{children}</div>
       </div>

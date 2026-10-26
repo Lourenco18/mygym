@@ -3,20 +3,22 @@ import { useApp } from '../context/AppContext';
 import { Button, Card, Field, Input, Select, Modal, EmptyState, Badge } from './ui';
 import type { Goal, GoalMetric } from '../types';
 import { weekSessions } from '../lib/calculations';
+import { translateSeedExerciseName, useTranslation } from '../lib/i18n';
 
 export function GoalsPage() {
   const { data, removeGoal } = useApp();
+  const { t } = useTranslation();
   const [showAdd, setShowAdd] = useState(false);
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Objetivos</h1>
-        <Button onClick={() => setShowAdd(true)}>+ Criar objetivo</Button>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-3xl font-bold tracking-tight">{t('Objetivos')}</h1>
+        <Button size="sm" onClick={() => setShowAdd(true)}>{t('Novo objetivo')}</Button>
       </header>
 
       {data.goals.length === 0 ? (
-        <EmptyState title="Sem objetivos" message="Define objetivos de peso, força ou frequência de treino." action={<Button onClick={() => setShowAdd(true)}>+ Criar objetivo</Button>} />
+        <EmptyState title={t('Sem objetivos')} message={t('Define objetivos de peso, força ou frequência de treino.')} action={<Button size="sm" onClick={() => setShowAdd(true)}>{t('Novo objetivo')}</Button>} />
       ) : (
         <div className="space-y-3">
           {data.goals.map((goal) => (
@@ -69,6 +71,7 @@ function currentValueFor(data: ReturnType<typeof useApp>['data'], goal: Goal): n
 
 function GoalCard({ goal, onRemove }: { goal: Goal; onRemove: () => void }) {
   const { data } = useApp();
+  const { t } = useTranslation();
   const current = currentValueFor(data, goal);
   const start = goal.startValue ?? 0;
   const target = goal.targetValue;
@@ -83,12 +86,12 @@ function GoalCard({ goal, onRemove }: { goal: Goal; onRemove: () => void }) {
     <Card className="p-4">
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-medium text-sm">{goal.title}{ex ? ` — ${ex.name}` : ''}</p>
+          <p className="font-medium text-sm">{goal.title}{ex ? ` — ${translateSeedExerciseName(ex.name, t)}` : ''}</p>
           <p className="text-xs text-[var(--text-dim)] tabular mt-0.5">
-            {current != null ? `${current} / ${target} ${goal.unit}` : `Objetivo: ${target} ${goal.unit}`}
+            {current != null ? `${current} / ${target} ${t(goal.unit).toLowerCase()}` : `${t('Objetivo:')} ${target} ${t(goal.unit).toLowerCase()}`}
           </p>
         </div>
-        <button onClick={onRemove} className="text-xs text-[var(--negative)]">Remover</button>
+        <button onClick={onRemove} className="text-xs text-[var(--negative)]">{t('Remover')}</button>
       </div>
       {current != null && (
         <div className="mt-3">
@@ -104,6 +107,7 @@ function GoalCard({ goal, onRemove }: { goal: Goal; onRemove: () => void }) {
 
 function AddGoalModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data, addGoal } = useApp();
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [metric, setMetric] = useState<GoalMetric>('bodyweight');
   const [exerciseId, setExerciseId] = useState('');
@@ -124,31 +128,31 @@ function AddGoalModal({ open, onClose }: { open: boolean; onClose: () => void })
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Criar objetivo">
+    <Modal open={open} onClose={onClose} title={t('Criar objetivo')}>
       <div className="space-y-4">
-        <Field label="Título"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Chegar aos 80kg no supino" autoFocus /></Field>
-        <Field label="Métrica">
+        <Field label={t('Título')}><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('Chegar aos 80kg no supino')} autoFocus /></Field>
+        <Field label={t('Métrica')}>
           <Select value={metric} onChange={(e) => { setMetric(e.target.value as GoalMetric); setUnit(e.target.value === 'bodyweight' ? 'kg' : e.target.value === 'exercise_weight' ? 'kg' : e.target.value === 'exercise_reps' ? 'reps' : e.target.value === 'workouts_per_week' ? 'treinos' : ''); }}>
-            <option value="bodyweight">Peso corporal</option>
-            <option value="exercise_weight">Peso num exercício</option>
-            <option value="exercise_reps">Repetições num exercício</option>
-            <option value="workouts_per_week">Treinos por semana</option>
-            <option value="custom">Personalizado</option>
+            <option value="bodyweight">{t('Peso corporal')}</option>
+            <option value="exercise_weight">{t('Peso num exercício')}</option>
+            <option value="exercise_reps">{t('Repetições num exercício')}</option>
+            <option value="workouts_per_week">{t('Treinos por semana')}</option>
+            <option value="custom">{t('Personalizado')}</option>
           </Select>
         </Field>
         {(metric === 'exercise_weight' || metric === 'exercise_reps') && (
-          <Field label="Exercício">
+          <Field label={t('Exercícios')}>
             <Select value={exerciseId} onChange={(e) => setExerciseId(e.target.value)}>
-              <option value="">Seleciona um exercício</option>
-              {data.exercises.filter((e) => !e.archived).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              <option value="">{t('Seleciona um exercício')}</option>
+              {data.exercises.filter((e) => !e.archived).map((e) => <option key={e.id} value={e.id}>{translateSeedExerciseName(e.name, t)}</option>)}
             </Select>
           </Field>
         )}
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Valor alvo"><Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
-          <Field label="Unidade"><Input value={unit} onChange={(e) => setUnit(e.target.value)} /></Field>
+          <Field label={t('Valor alvo')}><Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
+          <Field label={t('Unidade')}><Input value={unit} onChange={(e) => setUnit(e.target.value)} /></Field>
         </div>
-        <Button className="w-full" onClick={save} disabled={!title.trim() || !target}>Criar objetivo</Button>
+        <Button className="w-full" onClick={save} disabled={!title.trim() || !target}>{t('Criar objetivo')}</Button>
       </div>
     </Modal>
   );

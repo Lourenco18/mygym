@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { APP_NAME, THEME_KEY } from '../config';
+import { useTranslation } from '../lib/i18n';
 
 const NAV = [
   { to: '/', label: 'Início', icon: 'home', end: true },
@@ -20,8 +21,9 @@ const BOTTOM_NAV = [
   { to: '/calendario', label: 'Calendário', icon: 'calendar' },
   { to: '/planos', label: 'Planos', icon: 'plans' },
   { to: '/progresso', label: 'Progresso', icon: 'progress' },
-  { to: '/definicoes', label: 'Mais', icon: 'settings' },
 ];
+
+const MORE_NAV = NAV.filter((item) => !BOTTOM_NAV.some((primary) => primary.to === item.to));
 
 type IconName = typeof NAV[number]['icon'];
 
@@ -63,6 +65,23 @@ function useTheme() {
 
 export function Layout() {
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [moreOpenAt, setMoreOpenAt] = useState<string | null>(null);
+  const locationKey = `${location.pathname}${location.search}`;
+  const moreOpen = moreOpenAt === locationKey;
+  const moreIsActive = MORE_NAV.some((item) =>
+    item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to),
+  );
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMoreOpenAt(null);
+    }
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [moreOpen]);
 
   return (
     <div className="min-h-screen flex" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
@@ -74,11 +93,11 @@ export function Layout() {
           <span className="w-9 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center text-white font-semibold text-sm shadow-sm">M</span>
           <div>
             <span className="block font-semibold tracking-tight">{APP_NAME}</span>
-            <span className="block text-xs text-[var(--text-dim)]">O teu espaço de treino</span>
+            <span className="block text-xs text-[var(--text-dim)]">{t('O teu espaço de treino')}</span>
           </div>
         </div>
-        <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">Menu</p>
-        <nav className="flex-1 flex flex-col gap-1" aria-label="Navegação principal">
+        <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-dim)]">{t('Menu')}</p>
+        <nav className="flex-1 flex flex-col gap-1" aria-label={t('Navegação principal')}>
           {NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -89,7 +108,7 @@ export function Layout() {
               }
             >
               <NavIcon name={item.icon} />
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
         </nav>
@@ -98,7 +117,7 @@ export function Layout() {
           className="mt-4 flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-black/5 transition-colors"
         >
           <span aria-hidden>{theme === 'dark' ? '☼' : '◐'}</span>
-          {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+          {theme === 'dark' ? t('Modo claro') : t('Modo escuro')}
         </button>
       </aside>
 
@@ -106,8 +125,58 @@ export function Layout() {
         <Outlet context={{ theme, setTheme }} />
       </main>
 
+      {moreOpen && (
+        <>
+          <button
+            type="button"
+            aria-label={t('Fechar menu')}
+            className="md:hidden fixed inset-0 z-40 bg-black/30"
+            onClick={() => setMoreOpenAt(null)}
+          />
+          <section
+            id="mobile-more-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-more-title"
+            className="md:hidden fixed left-3 right-3 z-50 max-h-[min(60vh,480px)] overflow-y-auto rounded-2xl border p-4 shadow-2xl"
+            style={{
+              bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+              background: 'var(--bg-raised)',
+              borderColor: 'var(--border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 id="mobile-more-title" className="font-semibold">{t('Todas as opções')}</h2>
+              <button
+                type="button"
+                aria-label={t('Fechar menu')}
+                onClick={() => setMoreOpenAt(null)}
+                className="w-10 h-10 rounded-full text-[var(--text-dim)] hover:bg-[var(--bg)]"
+              >
+                ✕
+              </button>
+            </div>
+            <nav aria-label={t('Mais opções')} className="grid grid-cols-2 gap-2">
+              {MORE_NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `app-nav-link flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${isActive ? 'font-semibold' : ''}`
+                  }
+                >
+                  <NavIcon name={item.icon} />
+                  <span>{t(item.label)}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </section>
+        </>
+      )}
+
       <nav
-        aria-label="Navegação principal"
+        aria-label={t('Navegação principal')}
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex justify-around backdrop-blur-xl"
         style={{
           background: 'color-mix(in srgb, var(--bg-raised) 92%, transparent)',
@@ -130,6 +199,18 @@ export function Layout() {
             {item.label}
           </NavLink>
         ))}
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="mobile-more-menu"
+          onClick={() => setMoreOpenAt((current) => current === locationKey ? null : locationKey)}
+          className={`flex min-w-[56px] flex-col items-center gap-1 py-2.5 px-2 text-[10px] font-medium transition-colors ${
+            moreOpen || moreIsActive ? 'text-[var(--accent)]' : 'text-[var(--text-dim)]'
+          }`}
+        >
+          <span className="flex h-[18px] items-center justify-center text-lg leading-none" aria-hidden>•••</span>
+          {t('Mais')}
+        </button>
       </nav>
     </div>
   );

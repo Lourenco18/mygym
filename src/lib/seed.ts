@@ -38,6 +38,10 @@ const SEED: SeedExercise[] = [
   { name: 'Bicicleta', muscleGroup: 'Cardio', equipment: 'Nenhum' },
 ];
 
+export function isSeedExerciseName(name: string): boolean {
+  return SEED.some((exercise) => exercise.name === name);
+}
+
 export function buildSeedExercises(): Exercise[] {
   const now = new Date().toISOString();
   return SEED.map((s) => ({

@@ -4,10 +4,12 @@ import { useApp } from '../context/AppContext';
 import { Button, Card, NumberStepper, Badge, EmptyState } from './ui';
 import { performedHistoryForExercise, isCardioExercise } from '../lib/calculations';
 import type { PlannedExercise, ExerciseSet } from '../types';
+import { translatePlanDayName, translateSeedExerciseName, useTranslation } from '../lib/i18n';
 
 export function NewWorkoutRedirect() {
   const [params] = useSearchParams();
   const { data, startSession } = useApp();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const started = useRef(false);
 
@@ -23,12 +25,13 @@ export function NewWorkoutRedirect() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div className="p-8 text-center text-[var(--text-dim)]">A preparar treino...</div>;
+  return <div className="p-8 text-center text-[var(--text-dim)]">{t('A preparar treino...')}</div>;
 }
 
 export function WorkoutMode() {
   const { sessionId } = useParams();
   const { data, getSession, addPerformedExercise, addSet, updateSet, removeSet, finishSession } = useApp();
+  const { t, dateLocale } = useTranslation();
   const navigate = useNavigate();
   const session = getSession(sessionId ?? '');
 
@@ -85,7 +88,7 @@ export function WorkoutMode() {
   }, [currentPlanned?.id]);
 
   if (!session) {
-    return <div className="p-8"><EmptyState title="Treino não encontrado" message="Esta sessão pode ter sido apagada." action={<Link to="/"><Button>Voltar ao início</Button></Link>} /></div>;
+    return <div className="p-8"><EmptyState title={t('Treino não encontrado')} message={t('Esta sessão pode ter sido apagada.')} action={<Link to="/"><Button>{t('Voltar ao início')}</Button></Link>} /></div>;
   }
 
   const freshSession = getSession(session.id); // re-read after effects
@@ -116,8 +119,8 @@ export function WorkoutMode() {
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto space-y-4 pb-10">
       <div className="flex items-center justify-between">
-        <Link to="/" className="text-sm text-[var(--text-dim)]">← Sair</Link>
-        <p className="text-sm text-[var(--text-dim)]">{session.dayName}</p>
+        <Link to="/" className="text-sm text-[var(--text-dim)]">← {t('Sair')}</Link>
+        <p className="text-sm text-[var(--text-dim)]">{translatePlanDayName(session.dayName, t)}</p>
       </div>
 
       {/* Progress dots */}
@@ -131,19 +134,19 @@ export function WorkoutMode() {
         <Card accent className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="font-display text-2xl font-bold">{ex.name}</p>
+              <p className="font-display text-2xl font-bold">{translateSeedExerciseName(ex.name, t)}</p>
               {currentPlanned && (
                 <p className="text-sm text-[var(--text-dim)] mt-0.5 tabular">
                   {isCardioExercise(ex) ? (
                     <>
-                      Objetivo: {currentPlanned.targetDurationSeconds ? `${Math.round(currentPlanned.targetDurationSeconds / 60)} min` : 'tempo livre'}
+                      {t('Objetivo:')} {currentPlanned.targetDurationSeconds ? `${Math.round(currentPlanned.targetDurationSeconds / 60)} ${t('min')}` : t('tempo livre')}
                       {currentPlanned.targetDistanceKm ? ` · ${currentPlanned.targetDistanceKm} km` : ''}
                     </>
                   ) : currentPlanned.repType === 'time' ? (
-                    <>Objetivo: {currentPlanned.sets} × {currentPlanned.targetDurationSeconds ? formatDuration(currentPlanned.targetDurationSeconds) : 'tempo livre'}</>
+                    <>{t('Objetivo:')} {currentPlanned.sets} × {currentPlanned.targetDurationSeconds ? formatDuration(currentPlanned.targetDurationSeconds, t) : t('tempo livre')}</>
                   ) : (
                     <>
-                      Objetivo: {currentPlanned.sets} × {currentPlanned.repType === 'range' ? `${currentPlanned.repsMin}-${currentPlanned.repsMax}` : currentPlanned.repType === 'failure' ? 'até à falha' : currentPlanned.repsMin}
+                      {t('Objetivo:')} {currentPlanned.sets} × {currentPlanned.repType === 'range' ? `${currentPlanned.repsMin}-${currentPlanned.repsMax}` : currentPlanned.repType === 'failure' ? t('até à falha') : currentPlanned.repsMin}
                       {!ex.isBodyweight && currentPlanned.targetWeight ? ` @ ${currentPlanned.targetWeight} kg` : ''}
                     </>
                   )}
@@ -155,13 +158,13 @@ export function WorkoutMode() {
 
           {lastSession && (
             <div className="mt-3 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-dim)]">
-              Último treino ({new Date(lastSession.session.date + 'T00:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })}):{' '}
+              {t('Último treino ({{date}}):', { date: new Date(lastSession.session.date + 'T00:00:00').toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit' }) })}{' '}
               <span className="tabular text-[var(--text)]">
                 {isCardioExercise(ex)
-                  ? lastSession.pe.sets.filter((s) => s.completed).map((s) => `${s.durationSeconds ? Math.round(s.durationSeconds / 60) : '–'} min${s.distanceKm ? ` · ${s.distanceKm} km` : ''}`).join(' / ')
+                  ? lastSession.pe.sets.filter((s) => s.completed).map((s) => `${s.durationSeconds ? Math.round(s.durationSeconds / 60) : '–'} ${t('min')}${s.distanceKm ? ` · ${s.distanceKm} km` : ''}`).join(' / ')
                   : currentPlanned?.repType === 'time'
-                    ? lastSession.pe.sets.filter((s) => s.completed).map((s) => formatDuration(s.durationSeconds ?? 0)).join(' / ')
-                    : lastSession.pe.sets.filter((s) => s.completed).map((s) => ex.isBodyweight ? `${s.reps} reps` : `${s.weight}×${s.reps}`).join(' / ')}
+                    ? lastSession.pe.sets.filter((s) => s.completed).map((s) => formatDuration(s.durationSeconds ?? 0, t)).join(' / ')
+                    : lastSession.pe.sets.filter((s) => s.completed).map((s) => ex.isBodyweight ? `${s.reps} ${t('reps')}` : `${s.weight}×${s.reps}`).join(' / ')}
               </span>
             </div>
           )}
@@ -192,7 +195,7 @@ export function WorkoutMode() {
             className="w-full"
             onClick={() => addSet(session.id, livePerformed.id, { isExtra: true })}
           >
-            + Adicionar série
+            + {t('Adicionar série')}
           </Button>
         </div>
       )}
@@ -204,10 +207,10 @@ export function WorkoutMode() {
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
         >
-          ← Anterior
+          ← {t('Anterior')}
         </Button>
         <Button className="flex-1" size="lg" onClick={goNext}>
-          {isLastStep ? 'Terminar treino' : 'Próximo exercício →'}
+          {isLastStep ? t('Terminar treino') : `${t('Próximo exercício')} →`}
         </Button>
       </div>
     </div>
@@ -226,6 +229,7 @@ function SetEditor({
   onUpdate: (patch: Partial<import('../types').ExerciseSet>) => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   const [reps, setReps] = useState(set.reps ?? 0);
   const [weight, setWeight] = useState(set.weight ?? 0);
   const [durationMin, setDurationMin] = useState(set.durationSeconds != null ? set.durationSeconds / 60 : 0);
@@ -236,27 +240,27 @@ function SetEditor({
     return (
       <Card className={`p-4 ${set.completed ? 'opacity-70' : ''}`}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold">Cardio {set.isExtra && <Badge tone="accent">extra</Badge>}</p>
-          <button onClick={onRemove} className="text-xs text-[var(--negative)]">Remover</button>
+          <p className="text-sm font-semibold">{t('Cardio')} {set.isExtra && <Badge tone="accent">{t('extra')}</Badge>}</p>
+          <button onClick={onRemove} className="text-xs text-[var(--negative)]">{t('Remover')}</button>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <p className="text-xs text-[var(--text-dim)] mb-1">Duração (min)</p>
+            <p className="text-xs text-[var(--text-dim)] mb-1">{t('Duração (min)')}</p>
             <NumberStepper value={durationMin} onChange={setDurationMin} step={1} min={0} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-dim)] mb-1">Distância (km, opcional)</p>
+            <p className="text-xs text-[var(--text-dim)] mb-1">{t('Distância (km, opcional)')}</p>
             <NumberStepper value={distance} onChange={setDistance} step={0.5} min={0} decimals={1} />
           </div>
         </div>
         {set.completed ? (
-          <Badge tone="positive">✓ Concluído — {set.durationSeconds ? Math.round(set.durationSeconds / 60) : 0} min{set.distanceKm ? ` · ${set.distanceKm} km` : ''}</Badge>
+          <Badge tone="positive">✓ {t('Concluído')} — {set.durationSeconds ? Math.round(set.durationSeconds / 60) : 0} {t('min')}{set.distanceKm ? ` · ${set.distanceKm} km` : ''}</Badge>
         ) : (
           <Button
             className="w-full"
             onClick={() => onComplete({ durationSeconds: Math.round(durationMin * 60), distanceKm: distance || undefined })}
           >
-            ✓ Concluir
+            ✓ {t('Concluir')}
           </Button>
         )}
       </Card>
@@ -268,18 +272,18 @@ function SetEditor({
       <Card className={`p-4 ${set.completed ? 'opacity-70' : ''}`}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold">
-            Série {index + 1} {set.isExtra && <Badge tone="accent">extra</Badge>}
+            {t('Série')} {index + 1} {set.isExtra && <Badge tone="accent">{t('extra')}</Badge>}
           </p>
-          <button onClick={onRemove} className="text-xs text-[var(--negative)]">Remover</button>
+          <button onClick={onRemove} className="text-xs text-[var(--negative)]">{t('Remover')}</button>
         </div>
         <div className="mb-3">
-          <p className="text-xs text-[var(--text-dim)] mb-1">Duração (segundos)</p>
+          <p className="text-xs text-[var(--text-dim)] mb-1">{t('Duração (segundos)')}</p>
           <NumberStepper value={durationSeconds} onChange={setDurationSeconds} step={5} min={0} />
         </div>
         {set.completed ? (
-          <Badge tone="positive">✓ Concluída — {formatDuration(set.durationSeconds ?? 0)}</Badge>
+          <Badge tone="positive">✓ {t('Concluída')} — {formatDuration(set.durationSeconds ?? 0, t)}</Badge>
         ) : (
-          <Button className="w-full" onClick={() => onComplete({ durationSeconds })}>✓ Concluir série</Button>
+          <Button className="w-full" onClick={() => onComplete({ durationSeconds })}>✓ {t('Concluir série')}</Button>
         )}
       </Card>
     );
@@ -289,28 +293,28 @@ function SetEditor({
     <Card className={`p-4 ${set.completed ? 'opacity-70' : ''}`}>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold">
-          Série {index + 1} {set.isExtra && <Badge tone="accent">extra</Badge>}
+          {t('Série')} {index + 1} {set.isExtra && <Badge tone="accent">{t('extra')}</Badge>}
         </p>
-        <button onClick={onRemove} className="text-xs text-[var(--negative)]">Remover</button>
+        <button onClick={onRemove} className="text-xs text-[var(--negative)]">{t('Remover')}</button>
       </div>
       <div className={`grid ${isBodyweight ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-3`}>
         {!isBodyweight && (
           <div>
-            <p className="text-xs text-[var(--text-dim)] mb-1">Peso (kg)</p>
+            <p className="text-xs text-[var(--text-dim)] mb-1">{t('Peso (kg)')}</p>
             <NumberStepper value={weight} onChange={setWeight} step={2.5} min={0} decimals={1} />
           </div>
         )}
         <div>
-          <p className="text-xs text-[var(--text-dim)] mb-1">Repetições</p>
+          <p className="text-xs text-[var(--text-dim)] mb-1">{t('Repetições')}</p>
           <NumberStepper value={reps} onChange={setReps} step={1} min={0} />
         </div>
       </div>
       {set.completed ? (
         <Badge tone="positive">
-          ✓ Concluída — {isBodyweight ? `${set.reps} reps` : `${set.weight} kg × ${set.reps}`}
+          ✓ {t('Concluída')} — {isBodyweight ? `${set.reps} ${t('reps')}` : `${set.weight} kg × ${set.reps}`}
         </Badge>
       ) : (
-        <Button className="w-full" onClick={() => onComplete(isBodyweight ? { reps } : { weight, reps })}>✓ Concluir série</Button>
+        <Button className="w-full" onClick={() => onComplete(isBodyweight ? { reps } : { weight, reps })}>✓ {t('Concluir série')}</Button>
       )}
     </Card>
   );
@@ -319,9 +323,10 @@ function SetEditor({
 export function WorkoutSummary() {
   const { sessionId } = useParams();
   const { data } = useApp();
+  const { t } = useTranslation();
   const session = data.sessions.find((s) => s.id === sessionId);
 
-  if (!session) return <div className="p-8"><EmptyState title="Sessão não encontrada" message="" /></div>;
+  if (!session) return <div className="p-8"><EmptyState title={t('Sessão não encontrada')} message="" /></div>;
 
   const totalSets = session.performedExercises.reduce(
     (s, pe) => s + (isCardioExercise(data.exercises.find((ex) => ex.id === pe.exerciseId)) ? 0 : pe.sets.filter((x) => x.completed).length),
@@ -340,23 +345,23 @@ export function WorkoutSummary() {
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-5 text-center">
-      <p className="font-display text-3xl font-bold mt-6">Treino concluído 💪</p>
-      <p className="text-[var(--text-dim)]">{session.dayName}</p>
+      <p className="font-display text-3xl font-bold mt-6">{t('Treino concluído 💪')}</p>
+      <p className="text-[var(--text-dim)]">{translatePlanDayName(session.dayName, t)}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-sm sm:max-w-md mx-auto">
-        <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">Séries</p><p className="font-display text-3xl font-bold tabular">{totalSets}</p></Card>
-        <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">Volume</p><p className="font-display text-3xl font-bold tabular">{Math.round(totalVolume)} kg</p></Card>
+        <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">{t('Séries')}</p><p className="font-display text-3xl font-bold tabular">{totalSets}</p></Card>
+        <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">{t('Volume')}</p><p className="font-display text-3xl font-bold tabular">{Math.round(totalVolume)} kg</p></Card>
         {totalCardioMin > 0 && (
-          <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">Cardio</p><p className="font-display text-3xl font-bold tabular">{totalCardioMin} min</p></Card>
+          <Card className="p-4"><p className="text-xs text-[var(--text-dim)]">{t('Cardio')}</p><p className="font-display text-3xl font-bold tabular">{totalCardioMin} {t('min')}</p></Card>
         )}
       </div>
-      <Link to="/"><Button size="lg">Voltar ao dashboard</Button></Link>
+      <Link to="/"><Button size="lg">{t('Voltar ao dashboard')}</Button></Link>
     </div>
   );
 }
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds: number, t: ReturnType<typeof useTranslation>['t']): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  if (minutes === 0) return `${seconds} s`;
-  return remainingSeconds === 0 ? `${minutes} min` : `${minutes} min ${remainingSeconds} s`;
+  if (minutes === 0) return `${seconds} ${t('s')}`;
+  return remainingSeconds === 0 ? `${minutes} ${t('min')}` : `${minutes} ${t('min')} ${remainingSeconds} ${t('s')}`;
 }

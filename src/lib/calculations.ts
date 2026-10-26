@@ -125,6 +125,7 @@ export interface ProgressionSuggestion {
   exerciseId: string;
   message: string;
   suggestedWeight?: number;
+  stagnantSessions?: number;
 }
 
 /**
@@ -174,7 +175,8 @@ export function suggestProgression(
     if (stagnant) {
       return {
         exerciseId,
-        message: `Sem progressão de peso há ${topWeights.length} sessões.`,
+        message: 'Sem progressão de peso há {{count}} sessões.',
+        stagnantSessions: topWeights.length,
       };
     }
   }

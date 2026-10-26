@@ -3,9 +3,11 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { useApp } from '../context/AppContext';
 import { Card, BigStat, Badge } from './ui';
 import { sessionVolume, sessionSetCount, estimate1RM, sessionCardioMinutes } from '../lib/calculations';
+import { translateSeedExerciseName, useTranslation } from '../lib/i18n';
 
 export function Stats() {
   const { data } = useApp();
+  const { t, dateLocale } = useTranslation();
 
   const completed = data.sessions.filter((s) => s.status === 'completed');
 
@@ -20,7 +22,7 @@ export function Stats() {
 
   const weightData = [...data.bodyWeightEntries]
     .sort((a, b) => (a.date < b.date ? -1 : 1))
-    .map((w) => ({ date: new Date(w.date + 'T00:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' }), peso: w.weight }));
+    .map((w) => ({ date: new Date(w.date + 'T00:00:00').toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit' }), peso: w.weight }));
 
   const weeklyVolume = useMemo(() => buildWeeklySeries(completed, (s) => sessionVolume(s)), [completed]);
   const weeklyFrequency = useMemo(() => buildWeeklySeries(completed, () => 1, true), [completed]);
@@ -42,18 +44,18 @@ export function Stats() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-5">
-      <h1 className="font-display text-3xl font-bold tracking-tight">Progresso</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight">{t('Progresso')}</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4"><BigStat label="Treinos" value={String(totalWorkouts)} /></Card>
-        <Card className="p-4"><BigStat label="Séries" value={String(totalSets)} /></Card>
-        <Card className="p-4"><BigStat label="Repetições" value={String(totalReps)} /></Card>
-        <Card className="p-4"><BigStat label="Cardio" value={`${totalCardioMin} min`} /></Card>
+        <Card className="p-4"><BigStat label={t('Treinos')} value={String(totalWorkouts)} /></Card>
+        <Card className="p-4"><BigStat label={t('Séries')} value={String(totalSets)} /></Card>
+        <Card className="p-4"><BigStat label={t('Repetições')} value={String(totalReps)} /></Card>
+        <Card className="p-4"><BigStat label={t('Cardio')} value={`${totalCardioMin} ${t('min')}`} /></Card>
       </div>
 
       {weightData.length > 0 && (
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Peso corporal (kg)</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">{t('Peso corporal (kg)')}</p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={weightData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -68,7 +70,7 @@ export function Stats() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Volume semanal (kg)</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">{t('Volume semanal (kg)')}</p>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={weeklyVolume}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -80,7 +82,7 @@ export function Stats() {
           </ResponsiveContainer>
         </Card>
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Frequência de treino (semana)</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">{t('Frequência de treino (semana)')}</p>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={weeklyFrequency}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -95,9 +97,9 @@ export function Stats() {
 
       {muscleVolume.length > 0 && (
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">Volume por grupo muscular (total, kg)</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-3">{t('Volume por grupo muscular (total, kg)')}</p>
           <ResponsiveContainer width="100%" height={Math.max(180, muscleVolume.length * 32)}>
-            <BarChart data={muscleVolume} layout="vertical" margin={{ left: 8 }}>
+            <BarChart data={muscleVolume.map((item) => ({ ...item, grupo: t(item.grupo) }))} layout="vertical" margin={{ left: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
               <YAxis type="category" dataKey="grupo" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} width={90} />
@@ -109,9 +111,9 @@ export function Stats() {
       )}
 
       <div>
-        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-2">Recordes pessoais</p>
+        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)] mb-2">{t('Recordes pessoais')}</p>
         {prs.length === 0 ? (
-          <p className="text-sm text-[var(--text-dim)]">Ainda sem recordes registados.</p>
+          <p className="text-sm text-[var(--text-dim)]">{t('Ainda sem recordes registados.')}</p>
         ) : (
           <div className="space-y-2">
             {prs.map((pr) => {
@@ -119,13 +121,13 @@ export function Stats() {
               return (
                 <Card key={pr.id} className="p-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">🏆 {ex?.name}</p>
-                    <p className="text-xs text-[var(--text-dim)]">{new Date(pr.date + 'T00:00:00').toLocaleDateString('pt-PT')}</p>
+                    <p className="text-sm font-medium">🏆 {ex ? translateSeedExerciseName(ex.name, t) : t('Exercício')}</p>
+                    <p className="text-xs text-[var(--text-dim)]">{new Date(pr.date + 'T00:00:00').toLocaleDateString(dateLocale)}</p>
                   </div>
                   <Badge tone="accent">
                     {pr.type === 'max_weight' && `${pr.value} kg`}
-                    {pr.type === 'max_reps' && `${pr.value} reps`}
-                    {pr.type === 'max_volume' && `${Math.round(pr.value)} kg vol.`}
+                    {pr.type === 'max_reps' && `${pr.value} ${t('reps')}`}
+                    {pr.type === 'max_volume' && `${Math.round(pr.value)} kg ${t('vol.')}`}
                     {pr.type === 'estimated_1rm' && `~${pr.value} kg 1RM`}
                   </Badge>
                 </Card>
@@ -145,7 +147,7 @@ function buildWeeklySeries(sessions: import('../types').WorkoutSession[], value:
     const monday = new Date(d);
     const dow = (d.getDay() + 6) % 7;
     monday.setDate(d.getDate() - dow);
-    const key = monday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    const key = monday.toLocaleDateString(document.documentElement.lang || 'pt-PT', { day: '2-digit', month: '2-digit' });
     byWeek.set(key, (byWeek.get(key) ?? 0) + value(s));
   }
   return Array.from(byWeek.entries())

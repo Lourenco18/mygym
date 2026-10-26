@@ -4,12 +4,13 @@ import { useApp } from '../context/AppContext';
 import { Button, Card, Modal, Badge, Select } from './ui';
 import { isoDate } from '../lib/calculations';
 import type { MissedReason } from '../types';
+import { translatePlanDayName, useTranslation } from '../lib/i18n';
 
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-const WEEKDAY_LABELS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const REASONS: MissedReason[] = ['Falta de tempo', 'Descanso', 'Indisposição', 'Outro'];
 
 export function CalendarView() {
+  const { t, dateLocale } = useTranslation();
   const { data, markMissed, deleteSession } = useApp();
   const navigate = useNavigate();
   const [cursor, setCursor] = useState(new Date());
@@ -66,17 +67,20 @@ export function CalendarView() {
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
       <header className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Calendário</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">{t('Calendário')}</h1>
         <div className="flex items-center gap-2">
-          <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="w-9 h-9 rounded-lg border border-[var(--border)]">‹</button>
-          <span className="text-sm font-medium w-32 text-center">{MONTH_NAMES[month]} {year}</span>
-          <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="w-9 h-9 rounded-lg border border-[var(--border)]">›</button>
+          <button aria-label={t('Mês anterior')} onClick={() => setCursor(new Date(year, month - 1, 1))} className="w-9 h-9 rounded-lg border border-[var(--border)]">‹</button>
+          <span className="text-sm font-medium w-32 text-center">{t(MONTH_NAMES[month])} {year}</span>
+          <button aria-label={t('Mês seguinte')} onClick={() => setCursor(new Date(year, month + 1, 1))} className="w-9 h-9 rounded-lg border border-[var(--border)]">›</button>
         </div>
       </header>
 
       <Card className="p-3 md:p-5">
         <div className="grid grid-cols-7 gap-1 text-center text-xs text-[var(--text-dim)] mb-2">
-          {WEEKDAY_LABELS.map((d, i) => <div key={i}>{d}</div>)}
+          {Array.from({ length: 7 }, (_, i) => {
+            const weekday = new Date(2024, 0, i + 1);
+            return <div key={i}>{new Intl.DateTimeFormat(dateLocale, { weekday: 'narrow' }).format(weekday)}</div>;
+          })}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {cells.map((cell, i) => {
@@ -99,25 +103,25 @@ export function CalendarView() {
       </Card>
 
       <div className="flex gap-4 text-xs text-[var(--text-dim)] flex-wrap px-1">
-        <span><span className="text-[var(--positive)]">✓</span> Concluído</span>
-        <span><span className="text-[var(--text-dim)]">○</span> Planeado</span>
-        <span><span className="text-[var(--negative)]">✗</span> Perdido</span>
-        <span><span className="text-[var(--text-dim)]">—</span> Descanso</span>
+        <span><span className="text-[var(--positive)]">✓</span> {t('Concluído')}</span>
+        <span><span className="text-[var(--text-dim)]">○</span> {t('Planeado')}</span>
+        <span><span className="text-[var(--negative)]">✗</span> {t('Perdido')}</span>
+        <span><span className="text-[var(--text-dim)]">—</span> {t('Descanso')}</span>
       </div>
 
       <SessionList />
 
       {missedModal && (
-        <Modal open onClose={() => setMissedModal(null)} title="Treino não realizado">
+        <Modal open onClose={() => setMissedModal(null)} title={t('Treino não realizado')}>
           <div className="space-y-4">
-            <p className="text-sm text-[var(--text-dim)]">{missedModal.dayName} — {new Date(missedModal.date + 'T00:00:00').toLocaleDateString('pt-PT')}</p>
-            <p className="text-sm">Porque não realizaste este treino?</p>
+            <p className="text-sm text-[var(--text-dim)]">{translatePlanDayName(missedModal.dayName, t)} — {new Date(missedModal.date + 'T00:00:00').toLocaleDateString(dateLocale)}</p>
+            <p className="text-sm">{t('Porque não realizaste este treino?')}</p>
             <div className="grid grid-cols-2 gap-2">
               {REASONS.map((r) => (
-                <Button key={r} variant="secondary" onClick={() => { markMissed({ ...missedModal, reason: r }); setMissedModal(null); }}>{r}</Button>
+                <Button key={r} variant="secondary" onClick={() => { markMissed({ ...missedModal, reason: r }); setMissedModal(null); }}>{t(r)}</Button>
               ))}
             </div>
-            <Button variant="ghost" className="w-full" onClick={() => { markMissed(missedModal); setMissedModal(null); }}>Não indicar motivo</Button>
+            <Button variant="ghost" className="w-full" onClick={() => { markMissed(missedModal); setMissedModal(null); }}>{t('Não indicar motivo')}</Button>
           </div>
         </Modal>
       )}
@@ -126,6 +130,7 @@ export function CalendarView() {
 }
 
 function SessionList() {
+  const { t, dateLocale } = useTranslation();
   const { data, deleteSession } = useApp();
   const [filter, setFilter] = useState<'all' | 'completed' | 'missed'>('all');
 
@@ -137,29 +142,29 @@ function SessionList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)]">Histórico de treinos</p>
+        <p className="text-xs uppercase tracking-wide text-[var(--text-dim)]">{t('Histórico de treinos')}</p>
         <Select value={filter} onChange={(e) => setFilter(e.target.value as any)} className="w-36 !py-1.5 !text-xs">
-          <option value="all">Todos</option>
-          <option value="completed">Concluídos</option>
-          <option value="missed">Perdidos</option>
+          <option value="all">{t('Todos')}</option>
+          <option value="completed">{t('Concluídos')}</option>
+          <option value="missed">{t('Perdidos')}</option>
         </Select>
       </div>
       <div className="space-y-2">
         {sessions.map((s) => (
           <Card key={s.id} className="p-3 flex items-center justify-between">
             <Link to={s.status === 'in_progress' ? `/treino/${s.id}` : `/treino/${s.id}/resumo`} className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{s.dayName}</p>
-              <p className="text-xs text-[var(--text-dim)]">{new Date(s.date + 'T00:00:00').toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+              <p className="text-sm font-medium">{translatePlanDayName(s.dayName, t)}</p>
+              <p className="text-xs text-[var(--text-dim)]">{new Date(s.date + 'T00:00:00').toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
             </Link>
             <div className="flex items-center gap-2 shrink-0">
-              {s.status === 'completed' && <Badge tone="positive">Concluído</Badge>}
-              {s.status === 'missed' && <Badge tone="negative">{s.missedReason ?? 'Perdido'}</Badge>}
-              {s.status === 'in_progress' && <Badge tone="accent">Em curso</Badge>}
-              <button onClick={() => { if (confirm('Apagar este registo?')) deleteSession(s.id); }} className="text-[var(--text-dim)] text-xs">✕</button>
+              {s.status === 'completed' && <Badge tone="positive">{t('Concluído')}</Badge>}
+              {s.status === 'missed' && <Badge tone="negative">{s.missedReason ? t(s.missedReason) : t('Perdido')}</Badge>}
+              {s.status === 'in_progress' && <Badge tone="accent">{t('Em curso')}</Badge>}
+              <button aria-label={t('Remover')} onClick={() => { if (confirm(t('Apagar este registo?'))) deleteSession(s.id); }} className="text-[var(--text-dim)] text-xs">✕</button>
             </div>
           </Card>
         ))}
-        {sessions.length === 0 && <p className="text-sm text-[var(--text-dim)] py-4">Sem registos ainda.</p>}
+        {sessions.length === 0 && <p className="text-sm text-[var(--text-dim)] py-4">{t('Sem registos ainda.')}</p>}
       </div>
     </div>
   );

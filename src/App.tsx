@@ -13,31 +13,34 @@ import { NutritionPage } from './components/Nutrition';
 import { GoalsPage } from './components/Goals';
 import { FeedbackPage } from './components/Feedback';
 import { SettingsPage } from './components/Settings';
+import { LocaleProvider } from './lib/i18n';
 
 export default function App() {
   return (
-    <AppProvider>
-      <HashRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="calendario" element={<CalendarView />} />
-            <Route path="planos" element={<PlansList />} />
-            <Route path="planos/:id" element={<PlanEditor />} />
-            <Route path="exercicios" element={<ExerciseLibrary />} />
-            <Route path="exercicios/:id" element={<ExerciseDetail />} />
-            <Route path="progresso" element={<Stats />} />
-            <Route path="peso" element={<BodyWeightPage />} />
-            <Route path="nutricao" element={<NutritionPage />} />
-            <Route path="objetivos" element={<GoalsPage />} />
-            <Route path="analise" element={<FeedbackPage />} />
-            <Route path="definicoes" element={<SettingsPage />} />
-          </Route>
-          <Route path="treino/novo" element={<NewWorkoutRedirect />} />
-          <Route path="treino/:sessionId" element={<WorkoutMode />} />
-          <Route path="treino/:sessionId/resumo" element={<WorkoutSummary />} />
-        </Routes>
-      </HashRouter>
-    </AppProvider>
+    <LocaleProvider>
+      <AppProvider>
+        <HashRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="calendario" element={<CalendarView />} />
+              <Route path="planos" element={<PlansList />} />
+              <Route path="planos/:id" element={<PlanEditor />} />
+              <Route path="exercicios" element={<ExerciseLibrary />} />
+              <Route path="exercicios/:id" element={<ExerciseDetail />} />
+              <Route path="progresso" element={<Stats />} />
+              <Route path="peso" element={<BodyWeightPage />} />
+              <Route path="nutricao" element={<NutritionPage />} />
+              <Route path="objetivos" element={<GoalsPage />} />
+              <Route path="analise" element={<FeedbackPage />} />
+              <Route path="definicoes" element={<SettingsPage />} />
+            </Route>
+            <Route path="treino/novo" element={<NewWorkoutRedirect />} />
+            <Route path="treino/:sessionId" element={<WorkoutMode />} />
+            <Route path="treino/:sessionId/resumo" element={<WorkoutSummary />} />
+          </Routes>
+        </HashRouter>
+      </AppProvider>
+    </LocaleProvider>
   );
 }
