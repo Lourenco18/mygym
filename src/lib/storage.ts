@@ -14,6 +14,7 @@ function defaultData(): AppData {
     nutritionGoal: { calories: 2800, protein: 160 },
     goals: [],
     personalRecords: [],
+    scheduleOverrides: {},
   };
 }
 

@@ -112,6 +112,15 @@ export interface WorkoutSession {
   performedExercises: PerformedExercise[];
   missedReason?: MissedReason;
   durationSeconds?: number;
+  /** Data original do treino no plano (difere de `date` quando foi adiado). */
+  plannedDate?: string;
+}
+
+/** Um treino do plano colocado numa data concreta (pode ter sido adiado). */
+export interface ScheduledItem {
+  planId: string;
+  dayId: string;
+  originalDate: string;
 }
 
 export interface BodyWeightEntry {
@@ -180,4 +189,6 @@ export interface AppData {
   nutritionGoal: NutritionGoal;
   goals: Goal[];
   personalRecords: PersonalRecord[];
+  /** Alterações à agenda por data (adiamentos). null = sem treino nesse dia. */
+  scheduleOverrides: Record<string, ScheduledItem | null>;
 }

@@ -5,16 +5,19 @@ import { Button, Card, Modal, Badge, Select } from './ui';
 import { isoDate } from '../lib/calculations';
 import type { MissedReason } from '../types';
 import { translatePlanDayName, useTranslation } from '../lib/i18n';
+import { getScheduled, isItemDone, parseISODate } from '../lib/schedule';
+import type { ScheduledItem } from '../types';
 
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const REASONS: MissedReason[] = ['Falta de tempo', 'Descanso', 'Indisposição', 'Outro'];
 
 export function CalendarView() {
   const { t, dateLocale } = useTranslation();
-  const { data, markMissed, deleteSession } = useApp();
+  const { data, markMissed, deleteSession, postponeWorkout, resetSchedule } = useApp();
   const navigate = useNavigate();
   const [cursor, setCursor] = useState(new Date());
-  const [missedModal, setMissedModal] = useState<{ date: string; dayName: string; planId?: string; dayId?: string } | null>(null);
+  const [missedModal, setMissedModal] = useState<{ date: string; dayName: string; planId?: string; dayId?: string; plannedDate?: string } | null>(null);
+  const [dayModal, setDayModal] = useState<{ date: string; item: ScheduledItem } | null>(null);
 
   const activePlan = data.plans.find((p) => p.isActive && !p.archived);
 
@@ -40,11 +43,13 @@ export function CalendarView() {
     if (session?.status === 'missed') return { symbol: '✗', tone: 'negative' as const, session };
     if (session?.status === 'in_progress') return { symbol: '●', tone: 'accent' as const, session };
 
-    const planDay = activePlan?.days.find((d) => d.dayOfWeek === date.getDay());
-    if (!planDay) return { symbol: '', tone: 'neutral' as const, session: undefined };
-    if (planDay.isRestDay) return { symbol: '—', tone: 'neutral' as const, session: undefined, planDay };
-    if (ds < todayStr) return { symbol: '✗', tone: 'negative' as const, session: undefined, planDay, unlogged: true };
-    return { symbol: '○', tone: 'neutral' as const, session: undefined, planDay };
+    if (!activePlan) return { symbol: '', tone: 'neutral' as const, session: undefined };
+    const item = getScheduled(data, ds);
+    const planDay = item ? activePlan.days.find((d) => d.id === item.dayId) : undefined;
+    if (!item || !planDay || isItemDone(data, item)) return { symbol: '—', tone: 'neutral' as const, session: undefined };
+    const shifted = item.originalDate !== ds;
+    if (ds < todayStr) return { symbol: '✗', tone: 'negative' as const, session: undefined, planDay, item, shifted };
+    return { symbol: shifted ? '↷' : '○', tone: shifted ? ('accent' as const) : ('neutral' as const), session: undefined, planDay, item, shifted };
   }
 
   function handleDayClick(date: Date) {
@@ -55,14 +60,17 @@ export function CalendarView() {
       else navigate(`/treino/${info.session.id}/resumo`);
       return;
     }
-    if (info.planDay && !info.planDay.isRestDay) {
+    if ('item' in info && info.item && info.planDay) {
       if (ds < todayStr) {
-        setMissedModal({ date: ds, dayName: info.planDay.name, planId: activePlan?.id, dayId: info.planDay.id });
-      } else if (ds === todayStr) {
-        navigate(`/treino/novo?planId=${activePlan?.id}&dayId=${info.planDay.id}`);
+        setMissedModal({ date: ds, dayName: info.planDay.name, planId: activePlan?.id, dayId: info.planDay.id, plannedDate: info.item.originalDate });
+      } else {
+        setDayModal({ date: ds, item: info.item });
       }
     }
   }
+
+  const hasOverrides = Object.keys(data.scheduleOverrides ?? {}).some((k) => k >= todayStr);
+  const fmtDate = (iso: string) => parseISODate(iso).toLocaleDateString(dateLocale, { weekday: 'long', day: '2-digit', month: '2-digit' });
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
@@ -106,10 +114,56 @@ export function CalendarView() {
         <span><span className="text-[var(--positive)]">✓</span> {t('Concluído')}</span>
         <span><span className="text-[var(--text-dim)]">○</span> {t('Planeado')}</span>
         <span><span className="text-[var(--negative)]">✗</span> {t('Perdido')}</span>
+        <span><span className="text-[var(--accent)]">↷</span> {t('Adiado')}</span>
         <span><span className="text-[var(--text-dim)]">—</span> {t('Descanso')}</span>
       </div>
 
+      {hasOverrides && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { if (window.confirm(t('Repor a agenda original? Os adiamentos futuros são removidos.'))) resetSchedule(todayStr); }}
+        >
+          {t('Repor agenda original')}
+        </Button>
+      )}
+
       <SessionList />
+
+      {dayModal && (() => {
+        const day = activePlan?.days.find((d) => d.id === dayModal.item.dayId);
+        if (!day) return null;
+        const isToday = dayModal.date === todayStr;
+        return (
+          <Modal open onClose={() => setDayModal(null)} title={translatePlanDayName(day.name, t)}>
+            <div className="space-y-4">
+              <p className="text-sm text-[var(--text-dim)] capitalize">{fmtDate(dayModal.date)}</p>
+              {dayModal.item.originalDate !== dayModal.date && (
+                <Badge tone="warn">↷ {t('Adiado · dia original: {{date}}', { date: fmtDate(dayModal.item.originalDate) })}</Badge>
+              )}
+              <p className="text-sm text-[var(--text-dim)]">
+                {day.exercises.length} {t('exercícios')} · {day.exercises.reduce((s, e) => s + e.sets, 0)} {t('séries planeadas')}
+              </p>
+              {isToday && (
+                <Button className="w-full" onClick={() => navigate(`/treino/novo?planId=${dayModal.item.planId}&dayId=${day.id}&plannedDate=${dayModal.item.originalDate}`)}>
+                  {t('Começar treino')}
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  if (!window.confirm(t('Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.'))) return;
+                  if (!postponeWorkout(dayModal.date)) window.alert(t('Não há um dia livre nos próximos dias para absorver o adiamento.'));
+                  setDayModal(null);
+                }}
+              >
+                {t('Adiar treino')}
+              </Button>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {missedModal && (
         <Modal open onClose={() => setMissedModal(null)} title={t('Treino não realizado')}>

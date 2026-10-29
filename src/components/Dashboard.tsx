@@ -6,32 +6,48 @@ import { Card, BigStat, Badge, Button, EmptyState } from './ui';
 import {
   weekSessions, sessionVolume, currentStreak, isoDate, suggestProgression, sessionCardioMinutes,
 } from '../lib/calculations';
+import { getScheduled, findSessionForItem, isItemDone, addDaysISO, parseISODate } from '../lib/schedule';
 
 function activePlanOf(plans: ReturnType<typeof useApp>['data']['plans']) {
   return plans.find((p) => p.isActive && !p.archived);
 }
 
 export function Dashboard() {
-  const { data } = useApp();
+  const { data, postponeWorkout } = useApp();
   const { t, dateLocale } = useTranslation();
   const navigate = useNavigate();
   const plan = activePlanOf(data.plans);
 
   const today = new Date();
-  const todayDow = today.getDay();
-  const todayDay = plan?.days.find((d) => d.dayOfWeek === todayDow);
+  const todayISO = isoDate(today);
+  const todayItem = plan ? getScheduled(data, todayISO) : null;
+  const todayDay = plan && todayItem ? plan.days.find((d) => d.id === todayItem.dayId) : undefined;
+  const todaySession = todayItem ? findSessionForItem(data, todayItem) : undefined;
+  const todaySessionDone = todaySession?.status === 'completed';
+  const shortDate = (iso: string) => parseISODate(iso).toLocaleDateString(dateLocale, { weekday: 'short', day: '2-digit', month: '2-digit' });
 
-  const nextDay = useMemo(() => {
-    if (!plan) return null;
-    for (let i = 1; i <= 7; i++) {
-      const dow = (todayDow + i) % 7;
-      const d = plan.days.find((day) => day.dayOfWeek === dow && !day.isRestDay);
-      if (d) return { day: d, offset: i };
+  // Próximo treino pendente (respeita os adiamentos) e, se hoje foi adiado, para onde foi.
+  const { nextDay, postponedTo } = useMemo(() => {
+    let next: { day: NonNullable<typeof todayDay>; offset: number; date: string } | null = null;
+    let moved: { day: NonNullable<typeof todayDay>; date: string } | null = null;
+    if (plan) {
+      for (let i = 1; i <= 14; i++) {
+        const date = addDaysISO(todayISO, i);
+        const item = getScheduled(data, date);
+        if (!item || isItemDone(data, item)) continue;
+        const day = plan.days.find((d) => d.id === item.dayId);
+        if (!day) continue;
+        if (!next) next = { day, offset: i, date };
+        if (!moved && item.originalDate === todayISO) moved = { day, date };
+      }
     }
-    return null;
-  }, [plan, todayDow]);
+    return { nextDay: next, postponedTo: moved };
+  }, [data, plan, todayISO]);
 
-  const todaySessionDone = data.sessions.find((s) => s.date === isoDate(today) && s.status === 'completed');
+  function handlePostpone() {
+    if (!window.confirm(t('Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.'))) return;
+    if (!postponeWorkout(todayISO)) window.alert(t('Não há um dia livre nos próximos dias para absorver o adiamento.'));
+  }
 
   const thisWeek = weekSessions(data);
   const completedThisWeek = thisWeek.filter((s) => s.status === 'completed');
@@ -98,9 +114,18 @@ export function Dashboard() {
             message={t('Cria um plano de treino para veres aqui o treino de hoje.')}
             action={<Button onClick={() => navigate('/planos')}>{t('Criar plano')}</Button>}
           />
-        ) : todayDay?.isRestDay || !todayDay ? (
+        ) : !todayDay || !todayItem ? (
           <div>
-            <p className="font-display text-2xl md:text-3xl font-semibold">{t('Dia de descanso')}</p>
+            {postponedTo ? (
+              <>
+                <p className="font-display text-2xl md:text-3xl font-semibold">{t('Treino adiado')}</p>
+                <p className="text-sm text-[var(--text-dim)] mt-1">
+                  {translatePlanDayName(postponedTo.day.name, t)} → {shortDate(postponedTo.date)}
+                </p>
+              </>
+            ) : (
+              <p className="font-display text-2xl md:text-3xl font-semibold">{t('Dia de descanso')}</p>
+            )}
             {nextDay && (
               <p className="text-sm text-[var(--text-dim)] mt-1">
                 {t('Próximo treino: ')}<span className="text-[var(--text)] font-medium">{translatePlanDayName(nextDay.day.name, t)}</span> ({nextDay.offset === 1 ? t('amanhã') : t('em {{count}} dias', { count: nextDay.offset })})
@@ -115,16 +140,28 @@ export function Dashboard() {
         ) : (
           <div>
             <p className="font-display text-2xl md:text-3xl font-semibold">{translatePlanDayName(todayDay.name, t)}</p>
+            {todayItem.originalDate !== todayISO && (
+              <div className="mt-1"><Badge tone="warn">↷ {t('Adiado · dia original: {{date}}', { date: shortDate(todayItem.originalDate) })}</Badge></div>
+            )}
             <p className="text-sm text-[var(--text-dim)] mt-1">
               {todayDay.exercises.length} {t('exercícios')} · {todayDay.exercises.reduce((s, e) => s + e.sets, 0)} {t('séries planeadas')}
             </p>
-            <Button
-              size="lg"
-              className="mt-4 w-full sm:w-auto"
-              onClick={() => navigate(`/treino/novo?planId=${plan.id}&dayId=${todayDay.id}`)}
-            >
-              {t('Começar treino')}
-            </Button>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => todaySession?.status === 'in_progress'
+                  ? navigate(`/treino/${todaySession.id}`)
+                  : navigate(`/treino/novo?planId=${plan.id}&dayId=${todayDay.id}&plannedDate=${todayItem.originalDate}`)}
+              >
+                {todaySession?.status === 'in_progress' ? t('Continuar treino') : t('Começar treino')}
+              </Button>
+              {todaySession?.status !== 'in_progress' && (
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto" onClick={handlePostpone}>
+                  {t('Adiar treino')}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </Card>

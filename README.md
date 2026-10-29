@@ -95,6 +95,7 @@ src/
   volume máximo numa sessão, estimativa de 1RM)
 - Sugestões de progressão baseadas nos dados (nunca altera o plano
   automaticamente — a decisão é sempre tua)
+- Adiar treinos: o botão **Adiar treino** (Dashboard e Calendário) empurra o treino para o dia seguinte e os seguintes avançam também, até ao primeiro dia de descanso. Cada treino guarda o dia original ("↷ Adiado · dia original: ..."); **Repor agenda original** no Calendário desfaz os adiamentos
 - Calendário mensal com estado de cada dia (concluído / planeado / perdido /
   descanso) e possibilidade de marcar motivo de treino perdido
 - Cumprimento do plano e streak de dias seguidos

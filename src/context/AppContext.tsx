@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import { loadData, saveData, saveDataImmediate } from '../lib/storage';
 import { makeId } from '../lib/id';
+import { computePostpone } from '../lib/schedule';
 import { estimate1RM, isoDate } from '../lib/calculations';
 
 interface AppContextValue {
@@ -34,11 +35,13 @@ interface AppContextValue {
   reorderPlannedExercises: (planId: string, dayId: string, orderedIds: string[]) => void;
 
   // Sessions / workout mode
-  startSession: (opts: { planId?: string; dayId?: string; dayName: string }) => WorkoutSession;
+  startSession: (opts: { planId?: string; dayId?: string; dayName: string; plannedDate?: string }) => WorkoutSession;
   getSession: (id: string) => WorkoutSession | undefined;
   updateSession: (id: string, patch: Partial<WorkoutSession>) => void;
   finishSession: (id: string) => void;
-  markMissed: (opts: { planId?: string; dayId?: string; dayName: string; date: string; reason?: MissedReason }) => void;
+  markMissed: (opts: { planId?: string; dayId?: string; dayName: string; date: string; plannedDate?: string; reason?: MissedReason }) => void;
+  postponeWorkout: (dateISO: string) => boolean;
+  resetSchedule: (fromDateISO: string) => void;
   addPerformedExercise: (sessionId: string, exerciseId: string, plannedExerciseId?: string) => PerformedExercise;
   addSet: (sessionId: string, performedExerciseId: string, set?: Partial<ExerciseSet>) => void;
   updateSet: (sessionId: string, performedExerciseId: string, setId: string, patch: Partial<ExerciseSet>) => void;
@@ -231,13 +234,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })));
   }, []);
 
-  const startSession = useCallback((opts: { planId?: string; dayId?: string; dayName: string }) => {
+  const startSession = useCallback((opts: { planId?: string; dayId?: string; dayName: string; plannedDate?: string }) => {
     const session: WorkoutSession = {
       id: makeId(),
       planId: opts.planId,
       dayId: opts.dayId,
       dayName: opts.dayName,
       date: isoDate(),
+      plannedDate: opts.plannedDate,
       startedAt: new Date().toISOString(),
       status: 'in_progress',
       performedExercises: [],
@@ -313,18 +317,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const markMissed = useCallback((opts: { planId?: string; dayId?: string; dayName: string; date: string; reason?: MissedReason }) => {
+  const markMissed = useCallback((opts: { planId?: string; dayId?: string; dayName: string; date: string; plannedDate?: string; reason?: MissedReason }) => {
     const session: WorkoutSession = {
       id: makeId(),
       planId: opts.planId,
       dayId: opts.dayId,
       dayName: opts.dayName,
       date: opts.date,
+      plannedDate: opts.plannedDate,
       status: 'missed',
       performedExercises: [],
       missedReason: opts.reason,
     };
     setData((d) => ({ ...d, sessions: [session, ...d.sessions] }));
+  }, []);
+
+  const postponeWorkout = useCallback((dateISO: string) => {
+    const changes = computePostpone(data, dateISO);
+    if (!changes) return false;
+    setData((d) => ({ ...d, scheduleOverrides: { ...d.scheduleOverrides, ...changes } }));
+    return true;
+  }, [data]);
+
+  const resetSchedule = useCallback((fromDateISO: string) => {
+    setData((d) => {
+      const kept: AppData['scheduleOverrides'] = {};
+      for (const [k, v] of Object.entries(d.scheduleOverrides ?? {})) {
+        if (k < fromDateISO) kept[k] = v;
+      }
+      return { ...d, scheduleOverrides: kept };
+    });
   }, []);
 
   const addPerformedExercise = useCallback((sessionId: string, exerciseId: string, plannedExerciseId?: string) => {
@@ -424,7 +446,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addPlan, updatePlan, deletePlan, duplicatePlan, setActivePlan, archivePlan,
     addDay, updateDay, deleteDay, duplicateDay,
     addPlannedExercise, updatePlannedExercise, removePlannedExercise, reorderPlannedExercises,
-    startSession, getSession, updateSession, finishSession, markMissed,
+    startSession, getSession, updateSession, finishSession, markMissed, postponeWorkout, resetSchedule,
     addPerformedExercise, addSet, updateSet, removeSet, deleteSession,
     addBodyWeight, updateBodyWeight, removeBodyWeight,
     addNutrition, setNutritionGoal,

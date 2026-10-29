@@ -109,6 +109,14 @@ const seedExerciseTranslations: Record<Locale, Catalog> = {
   },
 };
 
+const extraCatalogs: Record<Locale, Catalog> = {
+  'pt-PT': {},
+  en: { 'Adiar treino': 'Postpone workout', 'Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.': 'Postpone this workout? The following workouts also move forward one day, up to the next rest day.', 'Não há um dia livre nos próximos dias para absorver o adiamento.': 'There is no free day in the coming days to absorb the postponement.', 'Treino adiado': 'Workout postponed', 'Adiado · dia original: {{date}}': 'Postponed · original day: {{date}}', 'Continuar treino': 'Continue workout', 'Adiado': 'Postponed', 'Repor a agenda original? Os adiamentos futuros são removidos.': 'Restore the original schedule? Future postponements will be removed.', 'Repor agenda original': 'Restore original schedule' },
+  fr: { 'Adiar treino': 'Reporter l’entraînement', 'Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.': 'Reporter cet entraînement ? Les suivants avancent aussi d’un jour, jusqu’au prochain jour de repos.', 'Não há um dia livre nos próximos dias para absorver o adiamento.': 'Aucun jour libre prochainement pour absorber le report.', 'Treino adiado': 'Entraînement reporté', 'Adiado · dia original: {{date}}': 'Reporté · jour d’origine : {{date}}', 'Continuar treino': 'Reprendre l’entraînement', 'Adiado': 'Reporté', 'Repor a agenda original? Os adiamentos futuros são removidos.': 'Rétablir le calendrier d’origine ? Les reports à venir seront supprimés.', 'Repor agenda original': 'Rétablir le calendrier d’origine' },
+  es: { 'Adiar treino': 'Aplazar entrenamiento', 'Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.': '¿Aplazar este entrenamiento? Los siguientes también avanzan un día, hasta el próximo día de descanso.', 'Não há um dia livre nos próximos dias para absorver o adiamento.': 'No hay ningún día libre próximamente para absorber el aplazamiento.', 'Treino adiado': 'Entrenamiento aplazado', 'Adiado · dia original: {{date}}': 'Aplazado · día original: {{date}}', 'Continuar treino': 'Continuar entrenamiento', 'Adiado': 'Aplazado', 'Repor a agenda original? Os adiamentos futuros são removidos.': '¿Restaurar la agenda original? Se quitarán los aplazamientos futuros.', 'Repor agenda original': 'Restaurar agenda original' },
+  it: { 'Adiar treino': 'Rimanda allenamento', 'Adiar este treino? Os treinos seguintes também avançam um dia, até ao próximo dia de descanso.': 'Rimandare questo allenamento? Anche i successivi slittano di un giorno, fino al prossimo giorno di riposo.', 'Não há um dia livre nos próximos dias para absorver o adiamento.': 'Nessun giorno libero nei prossimi giorni per assorbire il rinvio.', 'Treino adiado': 'Allenamento rimandato', 'Adiado · dia original: {{date}}': 'Rimandato · giorno originale: {{date}}', 'Continuar treino': 'Continua allenamento', 'Adiado': 'Rimandato', 'Repor a agenda original? Os adiamentos futuros são removidos.': 'Ripristinare il programma originale? I rinvii futuri verranno rimossi.', 'Repor agenda original': 'Ripristina programma originale' },
+};
+
 export function translateSeedExerciseName(name: string, t: (text: string) => string): string {
   return isSeedExerciseName(name) ? t(name) : name;
 }
@@ -154,7 +162,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     setLocale,
     dateLocale: locale === 'pt-PT' ? 'pt-PT' : locale,
     t: (text, values) => {
-      let translated = catalogs[locale][text] ?? seedExerciseTranslations[locale][text] ?? text;
+      let translated = catalogs[locale][text] ?? extraCatalogs[locale][text] ?? seedExerciseTranslations[locale][text] ?? text;
       if (values) {
         for (const [key, value] of Object.entries(values)) {
           translated = translated.replaceAll(`{{${key}}}`, String(value));

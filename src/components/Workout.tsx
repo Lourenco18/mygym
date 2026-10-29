@@ -20,7 +20,8 @@ export function NewWorkoutRedirect() {
     const dayId = params.get('dayId') ?? undefined;
     const plan = data.plans.find((p) => p.id === planId);
     const day = plan?.days.find((d) => d.id === dayId);
-    const session = startSession({ planId, dayId, dayName: day?.name ?? 'Treino livre' });
+    const plannedDate = params.get('plannedDate') ?? undefined;
+    const session = startSession({ planId, dayId, dayName: day?.name ?? 'Treino livre', plannedDate });
     navigate(`/treino/${session.id}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
